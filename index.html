@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker Game</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .cookie-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: none;
+            background: #8B4513;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            transition: all 0.1s;
+            font-size: 80px;
+        }
+        .cookie-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.4);
+        }
+        .cookie-btn:active {
+            transform: scale(0.95);
+        }
+        .score-display {
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        .game-title {
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row justify-content-center align-items-center min-vh-100">
+            <div class="col-12 text-center">
+                <h1 class="game-title mb-4">🍪 Cookie Clicker</h1>
+                
+                <!-- Score Display -->
+                <div class="score-display mb-5">
+                    Score: <span id="score">0</span>
+                </div>
+                
+                <!-- Cookie Button -->
+                <div class="mb-4">
+                    <button id="cookieBtn" class="cookie-btn">🍪</button>
+                </div>
+                
+                <!-- Instructions -->
+                <div class="text-white">
+                    <p>Klik op de cookie om punten te verdienen!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Game variables
+        let score = 0;
+        
+        // Get elements
+        const scoreElement = document.getElementById('score');
+        const cookieBtn = document.getElementById('cookieBtn');
+        
+        // Cookie click function
+        function clickCookie() {
+            score++;
+            scoreElement.textContent = score;
+            
+            // Add click animation
+            cookieBtn.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                cookieBtn.style.transform = 'scale(1)';
+            }, 100);
+        }
+        
+        // Add click event listener
+        cookieBtn.addEventListener('click', clickCookie);
+        
+        // Optional: Add keyboard support (spacebar)
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                event.preventDefault();
+                clickCookie();
+            }
+        });
+    </script>
+</body>
+</html>
