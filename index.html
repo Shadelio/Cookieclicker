@@ -3,34 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cookie Clicker Game</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <title>🍪 Cookie Empire - Premium Clicker Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row justify-content-center align-items-center min-vh-100">
-            <div class="col-12 text-center">
-                <h1 class="game-title mb-4">🍪 Cookie Clicker</h1>
-                
-                <!-- Score Display -->
-                <div class="score-display mb-5">
-                    Score: <span id="score">0</span>
+    <div class="game-universe">
+        <!-- Navigation Header -->
+        <nav class="cosmic-nav">
+            <div class="nav-brand">
+                <i class="fas fa-cookie-bite"></i>
+                <span>Cookie Empire</span>
+            </div>
+            <div class="nav-stats">
+                <div class="stat-orb">
+                    <div class="orb-icon">🍪</div>
+                    <div class="orb-content">
+                        <span class="orb-label">Koekjes</span>
+                        <span class="orb-value" id="score">0</span>
+                    </div>
+                </div>
+                <div class="stat-orb">
+                    <div class="orb-icon">⚡</div>
+                    <div class="orb-content">
+                        <span class="orb-label">Per Sec</span>
+                        <span class="orb-value" id="cps">0.0</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Game Area -->
+        <div class="game-cosmos">
+            <!-- Left Panel - Cookie Area -->
+            <div class="cookie-galaxy">
+                <div class="galaxy-title">
+                    <h1 data-text="🌟 Cookie Empire 🌟">🌟 Cookie Empire 🌟</h1>
+                    <p>✨ Klik op de magische cookie en bouw je koekjes imperium! ✨</p>
                 </div>
                 
-                <!-- Cookie Button -->
-                <div class="mb-4">
-                    <button id="cookieBtn" class="cookie-btn">🍪</button>
+                <div class="cookie-universe">
+                    <button id="cookieBtn" class="mega-cookie">
+                        <div class="cookie-core">🍪</div>
+                    </button>
+                    <div class="cookie-counter">
+                        <div class="counter-ring">
+                            <span id="clickCounter">+1</span>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Instructions -->
-                <div class="text-white">
-                    <p>Klik op de cookie om punten te verdienen!</p>
+
+                <div class="achievement-bar">
+                    <div class="achievement-item">
+                        <i class="fas fa-trophy"></i>
+                        <span>Cookie Master</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Shop -->
+            <div class="cosmic-shop">
+                <div class="shop-header">
+                    <h2><i class="fas fa-store"></i> Cosmic Shop</h2>
+                    <div class="shop-tabs">
+                        <button class="tab-btn active" data-tab="autoclickers">
+                            <i class="fas fa-robot"></i> Auto-Clickers
+                        </button>
+                        <button class="tab-btn" data-tab="themes">
+                            <i class="fas fa-palette"></i> Thema's
+                        </button>
+                    </div>
+                </div>
+
+                <div class="shop-content">
+                    <div class="tab-panel active" id="autoclickers-panel">
+                        <div id="autoclicker-shop" class="shop-grid"></div>
+                    </div>
+                    
+                    <div class="tab-panel" id="themes-panel">
+                        <div class="theme-gallery">
+                            <h3>🎨 Kies je Universum</h3>
+                            <div id="theme-selector" class="theme-grid"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <!-- Event Display -->
+        <div id="event-display" class="cosmic-events"></div>
+
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
