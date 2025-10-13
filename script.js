@@ -1,6 +1,193 @@
-/**
- * Autoclicker class - Manages individual autoclicker upgrades
- */
+
+
+class GameUtils {
+    static formatNumber(num, decimals = 0) {
+        if (num >= 1000000000) return (num / 1000000000).toFixed(decimals) + 'B';
+        if (num >= 1000000) return (num / 1000000).toFixed(decimals) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(decimals) + 'K';
+        return decimals > 0 ? num.toFixed(decimals) : num.toString();
+    }
+
+    static createFloatingText(text, x, y, color = '#ffd700') {
+        const effect = document.createElement('div');
+        effect.textContent = text;
+        effect.style.cssText = `
+            position: absolute;
+            color: ${color};
+            font-weight: bold;
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: 1000;
+            text-shadow: 0 0 10px ${color};
+            animation: floatUp 1s ease-out forwards;
+            left: ${x}px;
+            top: ${y}px;
+        `;
+        
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+        
+        
+        if (!document.querySelector('#floatUpStyle')) {
+            const style = document.createElement('style');
+            style.id = 'floatUpStyle';
+            style.textContent = `
+                @keyframes floatUp {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+                    100% { transform: translate(-50%, -150px) scale(1.5); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    static animateElement(element, scale = 0.9, duration = 100) {
+        element.style.transform = `scale(${scale})`;
+        setTimeout(() => {
+            element.style.transform = 'scale(1)';
+        }, duration);
+    }
+}
+
+
+class UIManager {
+    constructor(game) {
+        this.game = game;
+    }
+
+    updateShop() {
+        const shop = document.getElementById('autoclicker-shop');
+        shop.innerHTML = this.game.autoclickers.map((ac, index) => `
+            <div class="autoclicker-item ${this.game.score >= ac.cost ? 'affordable' : 'expensive'}">
+                <div class="autoclicker-info">
+                    <span class="autoclicker-emoji">${ac.emoji}</span>
+                    <div class="autoclicker-details">
+                        <div class="autoclicker-name">${ac.name} <span class="count">(${ac.count})</span></div>
+                        <div class="autoclicker-production">${(ac.cps * ac.count).toFixed(1)}/s</div>
+                    </div>
+                </div>
+                <button onclick="cookieGame.buyAutoclicker(${index})" 
+                        class="buy-btn ${this.game.score < ac.cost ? 'disabled' : ''}"
+                        ${this.game.score < ac.cost ? 'disabled' : ''}>
+                    ${ac.getFormattedCost()}
+                </button>
+            </div>
+        `).join('');
+    }
+
+    updateScoreDisplay() {
+        const formattedScore = GameUtils.formatNumber(Math.floor(this.game.score));
+        this.game.scoreElement.textContent = formattedScore;
+        if (this.game.cpsElement) {
+            this.game.cpsElement.textContent = GameUtils.formatNumber(this.game.cookiesPerSecond, 1);
+        }
+    }
+
+    updateClickCounter() {
+        const multiplier = this.game.activeEvent ? this.game.activeEvent.multiplier : 1;
+        const counter = document.getElementById('clickCounter');
+        if (counter) {
+            counter.textContent = `+${multiplier}`;
+        }
+    }
+
+    updateEventDisplay() {
+        const display = document.getElementById('event-display');
+        if (this.game.activeEvent && this.game.activeEvent.active) {
+            display.innerHTML = `
+                <div class="active-event">
+                    <span class="event-emoji">${this.game.activeEvent.emoji}</span>
+                    <div class="event-info">
+                        <div class="event-name">${this.game.activeEvent.name}</div>
+                        <div class="event-time">${this.game.activeEvent.getTimeLeftFormatted()}</div>
+                    </div>
+                    <div class="event-multiplier">${this.game.activeEvent.multiplier}x</div>
+                </div>
+            `;
+        } else {
+            display.innerHTML = '';
+        }
+    }
+
+    createThemeSelector() {
+        const selector = document.getElementById('theme-selector');
+        selector.innerHTML = Object.keys(this.game.themes).map(theme => `
+            <button onclick="cookieGame.changeTheme('${theme}')" class="theme-btn">
+                <i class="fas fa-palette"></i>
+                ${theme.charAt(0).toUpperCase() + theme.slice(1)}
+            </button>
+        `).join('') + `
+            <button onclick="cookieGame.changeTheme('default')" class="theme-btn">
+                <i class="fas fa-undo"></i>
+                Default
+            </button>
+        `;
+    }
+
+    setupTabSwitching() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabPanels = document.querySelectorAll('.tab-panel');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabPanels.forEach(p => p.classList.remove('active'));
+                
+                
+                document.getElementById(`${targetTab}-panel`).classList.add('active');
+            });
+        });
+    }
+}
+
+// Event Manager class for handling game events
+class EventManager {
+    constructor(game) {
+        this.game = game;
+        this.events = [
+            new SpecialEvent('Golden Cookie', 'Dubbele punten!', 30, 2, '🪙'),
+            new SpecialEvent('Cookie Storm', 'Triple punten!', 15, 3, '🌪️'),
+            new SpecialEvent('Lucky Day', '5x punten!', 10, 5, '🍀'),
+            new SpecialEvent('Cookie Rain', 'Koekjes regenen!', 20, 4, '🌧️'),
+            new SpecialEvent('Magic Hour', 'Toverpunten!', 25, 3, '🔮')
+        ];
+        this.activeEvent = null;
+    }
+
+    triggerRandomEvent() {
+        if (Math.random() < 0.02 && !this.activeEvent) { 
+            const event = this.events[Math.floor(Math.random() * this.events.length)];
+            event.activate();
+            this.activeEvent = event;
+            this.showEventNotification(event);
+        }
+    }
+
+    showEventNotification(event) {
+        const notification = document.createElement('div');
+        notification.className = 'event-notification';
+        notification.textContent = `${event.name}: ${event.description}`;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    updateEvents() {
+        if (this.activeEvent) {
+            this.activeEvent.update();
+            if (!this.activeEvent.active) {
+                this.activeEvent = null;
+            }
+        }
+    }
+
+    getCurrentMultiplier() {
+        return this.activeEvent ? this.activeEvent.multiplier : 1;
+    }
+}
+
 class Autoclicker {
     constructor(name, cost, cps, description, emoji = '🖱️') {
         this.name = name;
@@ -31,9 +218,7 @@ class Autoclicker {
 }
 
 
-/**
- * Theme class - Manages visual themes and styling
- */
+
 class Theme {
     constructor(name, background, colors, particles = false) {
         this.name = name;
@@ -69,9 +254,7 @@ class Theme {
 }
 
 
-/**
- * SpecialEvent class - Manages temporary boosts and events
- */
+
 class SpecialEvent {
     constructor(name, description, duration, multiplier, emoji = '✨') {
         this.name = name;
@@ -110,15 +293,18 @@ class CookieClicker {
         this.animationDuration = 100;
         this.cookiesPerSecond = 0;
         
-        
+        // DOM elements
         this.scoreElement = document.getElementById('score');
         this.cookieBtn = document.getElementById('cookieBtn');
         this.cpsElement = document.getElementById('cps');
         
+        // Initialize managers
+        this.uiManager = new UIManager(this);
+        this.eventManager = new EventManager(this);
         
+        // Initialize game components
         this.initAutoclickers();
         this.initThemes();
-        this.initEvents();
         this.init();
     }
     
@@ -167,92 +353,28 @@ class CookieClicker {
         this.currentTheme = 'default';
     }
 
-    initEvents() {
-        this.events = [
-            new SpecialEvent('Golden Cookie', 'Dubbele punten!', 30, 2, '🪙'),
-            new SpecialEvent('Cookie Storm', 'Triple punten!', 15, 3, '🌪️'),
-            new SpecialEvent('Lucky Day', '5x punten!', 10, 5, '🍀'),
-            new SpecialEvent('Cookie Rain', 'Koekjes regenen!', 20, 4, '🌧️'),
-            new SpecialEvent('Magic Hour', 'Toverpunten!', 25, 3, '🔮')
-        ];
-        this.activeEvent = null;
+    // Events are now handled by EventManager
+    get activeEvent() {
+        return this.eventManager.activeEvent;
     }
     
     init() {
         this.setupEventListeners();
-        this.updateScoreDisplay();
+        this.uiManager.updateScoreDisplay();
         this.createUI();
         this.startGameLoop();
     }
     
     createUI() {
-        this.updateShop();
-        this.createThemeSelector();
-        this.setupTabSwitching();
-        this.updateClickCounter();
+        this.uiManager.updateShop();
+        this.uiManager.createThemeSelector();
+        this.uiManager.setupTabSwitching();
+        this.uiManager.updateClickCounter();
     }
 
-    setupTabSwitching() {
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        const tabPanels = document.querySelectorAll('.tab-panel');
 
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const targetTab = btn.dataset.tab;
-                
-                // Remove active class from all tabs and panels
-                tabBtns.forEach(b => b.classList.remove('active'));
-                tabPanels.forEach(p => p.classList.remove('active'));
-                
-                // Add active class to clicked tab and corresponding panel
-                btn.classList.add('active');
-                document.getElementById(`${targetTab}-panel`).classList.add('active');
-            });
-        });
-    }
 
-    updateClickCounter() {
-        const multiplier = this.activeEvent ? this.activeEvent.multiplier : 1;
-        const counter = document.getElementById('clickCounter');
-        if (counter) {
-            counter.textContent = `+${multiplier}`;
-        }
-    }
 
-    updateShop() {
-        const shop = document.getElementById('autoclicker-shop');
-        shop.innerHTML = this.autoclickers.map((ac, index) => `
-            <div class="autoclicker-item ${this.score >= ac.cost ? 'affordable' : 'expensive'}">
-                <div class="autoclicker-info">
-                    <span class="autoclicker-emoji">${ac.emoji}</span>
-                    <div class="autoclicker-details">
-                        <div class="autoclicker-name">${ac.name} <span class="count">(${ac.count})</span></div>
-                        <div class="autoclicker-production">${(ac.cps * ac.count).toFixed(1)}/s</div>
-                    </div>
-                </div>
-                <button onclick="cookieGame.buyAutoclicker(${index})" 
-                        class="buy-btn ${this.score < ac.cost ? 'disabled' : ''}"
-                        ${this.score < ac.cost ? 'disabled' : ''}>
-                    ${ac.getFormattedCost()}
-                </button>
-            </div>
-        `).join('');
-    }
-
-    createThemeSelector() {
-        const selector = document.getElementById('theme-selector');
-        selector.innerHTML = Object.keys(this.themes).map(theme => `
-            <button onclick="cookieGame.changeTheme('${theme}')" class="theme-btn">
-                <i class="fas fa-palette"></i>
-                ${theme.charAt(0).toUpperCase() + theme.slice(1)}
-            </button>
-        `).join('') + `
-            <button onclick="cookieGame.changeTheme('default')" class="theme-btn">
-                <i class="fas fa-undo"></i>
-                Default
-            </button>
-        `;
-    }
     
     setupEventListeners() {
         this.cookieBtn.addEventListener('click', () => this.clickCookie());
@@ -260,52 +382,21 @@ class CookieClicker {
     }
     
     clickCookie() {
-        const multiplier = this.activeEvent ? this.activeEvent.multiplier : 1;
+        const multiplier = this.eventManager.getCurrentMultiplier();
         this.score += multiplier;
-        this.updateScoreDisplay();
+        this.uiManager.updateScoreDisplay();
         this.animateCookie();
-        this.updateClickCounter();
+        this.uiManager.updateClickCounter();
         this.showClickEffect(multiplier);
     }
 
     showClickEffect(multiplier) {
-        // Create floating text effect
-        const effect = document.createElement('div');
-        effect.textContent = `+${multiplier}`;
-        effect.style.cssText = `
-            position: absolute;
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 2rem;
-            pointer-events: none;
-            z-index: 1000;
-            text-shadow: 0 0 10px #ffd700;
-            animation: floatUp 1s ease-out forwards;
-        `;
-        
-        // Position near the cookie
         const cookieBtn = document.getElementById('cookieBtn');
         const rect = cookieBtn.getBoundingClientRect();
-        effect.style.left = (rect.left + rect.width/2) + 'px';
-        effect.style.top = (rect.top + rect.height/2) + 'px';
+        const x = rect.left + rect.width/2;
+        const y = rect.top + rect.height/2;
         
-        document.body.appendChild(effect);
-        
-        // Remove after animation
-        setTimeout(() => effect.remove(), 1000);
-        
-        // Add CSS for the animation if not exists
-        if (!document.querySelector('#floatUpStyle')) {
-            const style = document.createElement('style');
-            style.id = 'floatUpStyle';
-            style.textContent = `
-                @keyframes floatUp {
-                    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-                    100% { transform: translate(-50%, -150px) scale(1.5); opacity: 0; }
-                }
-            `;
-            document.head.appendChild(style);
-        }
+        GameUtils.createFloatingText(`+${multiplier}`, x, y);
     }
     
     buyAutoclicker(index) {
@@ -314,8 +405,8 @@ class CookieClicker {
             this.score -= ac.cost;
             ac.buy();
             this.updateCookiesPerSecond();
-            this.updateScoreDisplay();
-            this.updateShop();
+            this.uiManager.updateScoreDisplay();
+            this.uiManager.updateShop();
         }
     }
 
@@ -334,26 +425,10 @@ class CookieClicker {
         this.cookiesPerSecond = this.autoclickers.reduce((total, ac) => total + ac.getTotalCps(), 0);
     }
     
-    updateScoreDisplay() {
-        const formattedScore = this.formatNumber(Math.floor(this.score));
-        this.scoreElement.textContent = formattedScore;
-        if (this.cpsElement) {
-            this.cpsElement.textContent = this.formatNumber(this.cookiesPerSecond, 1);
-        }
-    }
 
-    formatNumber(num, decimals = 0) {
-        if (num >= 1000000000) return (num / 1000000000).toFixed(decimals) + 'B';
-        if (num >= 1000000) return (num / 1000000).toFixed(decimals) + 'M';
-        if (num >= 1000) return (num / 1000).toFixed(decimals) + 'K';
-        return decimals > 0 ? num.toFixed(decimals) : num.toString();
-    }
     
     animateCookie() {
-        this.cookieBtn.style.transform = 'scale(0.9)';
-        setTimeout(() => {
-            this.cookieBtn.style.transform = 'scale(1)';
-        }, this.animationDuration);
+        GameUtils.animateElement(this.cookieBtn, 0.9, this.animationDuration);
     }
     
     handleKeyPress(event) {
@@ -381,44 +456,22 @@ class CookieClicker {
     }
 
     updateEvents() {
-        if (this.activeEvent) {
-            this.activeEvent.update();
-            if (!this.activeEvent.active) {
-                this.activeEvent = null;
-            }
-        }
-        this.updateEventDisplay();
-        this.updateClickCounter();
+        this.eventManager.updateEvents();
+        this.uiManager.updateEventDisplay();
+        this.uiManager.updateClickCounter();
     }
 
-    updateEventDisplay() {
-        const display = document.getElementById('event-display');
-        if (this.activeEvent && this.activeEvent.active) {
-            display.innerHTML = `
-                <div class="active-event">
-                    <span class="event-emoji">${this.activeEvent.emoji}</span>
-                    <div class="event-info">
-                        <div class="event-name">${this.activeEvent.name}</div>
-                        <div class="event-time">${this.activeEvent.getTimeLeftFormatted()}</div>
-                    </div>
-                    <div class="event-multiplier">${this.activeEvent.multiplier}x</div>
-                </div>
-            `;
-        } else {
-            display.innerHTML = '';
-        }
-    }
 
     startGameLoop() {
         setInterval(() => {
-            
+            // Update score from autoclickers
             this.score += this.cookiesPerSecond / 10; 
-            this.updateScoreDisplay();
-            this.updateShop();
+            this.uiManager.updateScoreDisplay();
+            this.uiManager.updateShop();
         }, 100);
 
         setInterval(() => {
-            this.triggerRandomEvent();
+            this.eventManager.triggerRandomEvent();
             this.updateEvents();
         }, 1000);
     }
@@ -434,8 +487,8 @@ class CookieClicker {
             ac.cost = ac.baseCost;
         });
         this.updateCookiesPerSecond();
-        this.updateScoreDisplay();
-        this.updateShop();
+        this.uiManager.updateScoreDisplay();
+        this.uiManager.updateShop();
     }
 }
 
