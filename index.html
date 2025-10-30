@@ -1,101 +1,84 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍪 Cookie Empire - Premium Clicker Game</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css?v=4">
+    <title>Cookie Clicker</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        /* Smooth theme transitions */
+        :root {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        body {
+            transition: background-color 0.3s ease;
+        }
+    </style>
 </head>
 <body>
-    <div class="game-universe">
-        <!-- Navigation Header -->
-        <nav class="cosmic-nav">
-            <div class="nav-brand">
-                <i class="fas fa-cookie-bite"></i>
-                <span>Cookie Empire</span>
-            </div>
-            <div class="nav-stats">
-                <div class="stat-orb">
-                    <div class="orb-icon">🍪</div>
-                    <div class="orb-content">
-                        <span class="orb-label">Koekjes</span>
-                        <span class="orb-value" id="score">0</span>
-                    </div>
-                </div>
-                <div class="stat-orb">
-                    <div class="orb-icon">⚡</div>
-                    <div class="orb-content">
-                        <span class="orb-label">Per Sec</span>
-                        <span class="orb-value" id="cps">0.0</span>
-                    </div>
+    <div class="game-container">
+        <header>
+            <h1>Cookie Clicker</h1>
+            <div class="score-container">
+                <span id="score">0</span> cookies
+                <div class="cookies-per-second">
+                    <span id="cps">0</span> per second
                 </div>
             </div>
-        </nav>
+        </header>
 
-        <!-- Main Game Area -->
-        <div class="game-cosmos">
-            <!-- Left Panel - Cookie Area -->
-            <div class="cookie-galaxy">
-                <div class="galaxy-title">
-                    <h1 data-text="🌟 Cookie Empire 🌟">🌟 Cookie Empire 🌟</h1>
-                    <p>✨ Klik op de magische cookie en bouw je koekjes imperium! ✨</p>
+        <main class="main-layout">
+            <div class="cookie-container">
+                <button id="cookie" class="cookie-button" aria-label="Click to earn cookies">
+                    <img src="https://img.icons8.com/color/96/000000/cookie--v1.png" alt="Click the cookie!" class="cookie-image">
+                    <div class="click-effect">+1</div>
+                </button>
+            </div>
+
+            <div class="shop">
+                <div class="shop-section">
+                    <h2>Auto Clickers</h2>
+                    <div id="auto-clickers" class="shop-items">
+                    </div>
                 </div>
-                
-                <div class="cookie-universe">
-                    <button id="cookieBtn" class="mega-cookie">
-                        <div class="cookie-core">🍪</div>
-                    </button>
-                    <div class="cookie-counter">
-                        <div class="counter-ring">
-                            <span id="clickCounter">+1</span>
+
+                <div class="shop-section">
+                    <h2>Upgrades</h2>
+                    <div id="upgrades" class="shop-items">
+                    </div>
+                </div>
+
+                <div class="shop-section">
+                    <h2>Statistics</h2>
+                    <div id="statistics" class="shop-items">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Cookies:</span>
+                            <span id="total-cookies" class="stat-value">0</span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="achievement-bar">
-                    <div class="achievement-item">
-                        <i class="fas fa-trophy"></i>
-                        <span>Cookie Master</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel - Shop -->
-            <div class="cosmic-shop">
-                <div class="shop-header">
-                    <h2><i class="fas fa-store"></i> Cosmic Shop</h2>
-                    <div class="shop-tabs">
-                        <button class="tab-btn active" data-tab="autoclickers">
-                            <i class="fas fa-robot"></i> Auto-Clickers
-                        </button>
-                        <button class="tab-btn" data-tab="themes">
-                            <i class="fas fa-palette"></i> Thema's
-                        </button>
-                    </div>
-                </div>
-
-                <div class="shop-content">
-                    <div class="tab-panel active" id="autoclickers-panel">
-                        <div id="autoclicker-shop" class="shop-grid"></div>
-                    </div>
-                    
-                    <div class="tab-panel" id="themes-panel">
-                        <div class="theme-gallery">
-                            <h3>🎨 Kies je Universum</h3>
-                            <div id="theme-selector" class="theme-grid"></div>
+                        <div class="stat-item">
+                            <span class="stat-label">Cookies Per Second:</span>
+                            <span id="total-cps" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Clicks:</span>
+                            <span id="total-clicks" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Auto Clickers Owned:</span>
+                            <span id="autoclickers-owned" class="stat-value">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Upgrades Owned:</span>
+                            <span id="upgrades-owned" class="stat-value">0</span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Event Display -->
-        <div id="event-display" class="cosmic-events"></div>
-
+        </main>
+        <div id="notification" class="notification" role="status" aria-live="polite"></div>
+        <div id="event-notification" class="event-notification" role="alert" aria-live="assertive"></div>
     </div>
-
-    <script src="script.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
