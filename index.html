@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Cookie Clicker</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.0">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         /* Smooth theme transitions */
@@ -19,7 +22,7 @@
 <body>
     <div class="game-container">
         <header>
-            <h1>Cookie Clicker</h1>
+            <h1>Cookie Clicker </h1>
             <div class="score-container">
                 <span id="score">0</span> cookies
                 <div class="cookies-per-second">
@@ -38,39 +41,57 @@
 
             <div class="shop">
                 <div class="shop-section">
-                    <h2>Auto Clickers</h2>
-                    <div id="auto-clickers" class="shop-items">
+                    <!-- Tab Navigation -->
+                    <div class="tab-navigation">
+                        <button class="tab-button active" data-tab="auto-clickers">
+                            <span class="material-icons">mouse</span>
+                            Auto Clickers
+                        </button>
+                        <button class="tab-button" data-tab="upgrades">
+                            <span class="material-icons">upgrade</span>
+                            Upgrades
+                        </button>
+                        <button class="tab-button" data-tab="statistics">
+                            <span class="material-icons">analytics</span>
+                            Statistics
+                        </button>
                     </div>
-                </div>
 
-                <div class="shop-section">
-                    <h2>Upgrades</h2>
-                    <div id="upgrades" class="shop-items">
-                    </div>
-                </div>
+                    <!-- Tab Content -->
+                    <div class="tab-content">
+                        <div id="auto-clickers-tab" class="tab-panel active">
+                            <div id="auto-clickers" class="shop-items">
+                            </div>
+                        </div>
 
-                <div class="shop-section">
-                    <h2>Statistics</h2>
-                    <div id="statistics" class="shop-items">
-                        <div class="stat-item">
-                            <span class="stat-label">Total Cookies:</span>
-                            <span id="total-cookies" class="stat-value">0</span>
+                        <div id="upgrades-tab" class="tab-panel">
+                            <div id="upgrades" class="shop-items">
+                            </div>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Cookies Per Second:</span>
-                            <span id="total-cps" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Total Clicks:</span>
-                            <span id="total-clicks" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Auto Clickers Owned:</span>
-                            <span id="autoclickers-owned" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Upgrades Owned:</span>
-                            <span id="upgrades-owned" class="stat-value">0</span>
+
+                        <div id="statistics-tab" class="tab-panel">
+                            <div id="statistics" class="shop-items">
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Cookies:</span>
+                                    <span id="total-cookies" class="stat-value">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Cookies Per Second:</span>
+                                    <span id="total-cps" class="stat-value">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Clicks:</span>
+                                    <span id="total-clicks" class="stat-value">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Auto Clickers Owned:</span>
+                                    <span id="autoclickers-owned" class="stat-value">0</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Upgrades Owned:</span>
+                                    <span id="upgrades-owned" class="stat-value">0</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -79,6 +100,6 @@
         <div id="notification" class="notification" role="status" aria-live="polite"></div>
         <div id="event-notification" class="event-notification" role="alert" aria-live="assertive"></div>
     </div>
-    <script src="game.js"></script>
+    <script src="game.js?v=1.0"></script>
 </body>
 </html>
