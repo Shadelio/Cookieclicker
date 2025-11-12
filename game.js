@@ -675,9 +675,89 @@ class Game {
         requestAnimationFrame((ts) => this.gameLoop(ts));
     }
 
+    resetGame() {
+        if (confirm('Are you sure you want to reset your game? This will delete all your progress!')) {
+            // Reset game state
+            this.cookies = 0;
+            this.cookiesPerSecond = 0;
+            this.cookiesPerClick = 1;
+            this.clickMultiplier = 1;
+            this.totalClicks = 0;
+            this.totalCookiesEarned = 0;
+            
+            // Reset auto-clickers
+            this.autoClickers.forEach(autoClicker => {
+                autoClicker.count = 0;
+            });
+            
+            // Cookie selector functionality
+            this.setupCookieSelector();
+
+            // Reset upgrades
+            this.upgrades.forEach(upgrade => {
+                upgrade.owned = false;
+            });
+            
+            // Clear saved game from localStorage
+            localStorage.removeItem('cookieClickerSave');
+            
+            // Update UI
+            this.updateCookiesPerSecond();
+            this.ui.updateStatistics();
+            this.ui.showNotification('Game has been reset!');
+            
+            // Re-render UI elements
+            this.ui.updateShopButtons();
+            this.ui.render();
+        }
+    }
+
+    // Setup cookie selector functionality
+    setupCookieSelector() {
+        const cookieOptions = document.querySelectorAll('.cookie-option');
+        const cookieImage = document.querySelector('.cookie-image');
+        
+        // Load saved cookie selection or use default
+        const savedCookie = localStorage.getItem('selectedCookie') || 'cookie1';
+        
+        // Set initial cookie
+        cookieOptions.forEach(option => {
+            const cookieType = option.getAttribute('data-cookie');
+            if (cookieType === savedCookie) {
+                option.classList.add('active');
+                if (cookieImage) {
+                    cookieImage.src = `images/${cookieType}.png`;
+                }
+            }
+            
+            // Add click event for each cookie option
+            option.addEventListener('click', () => {
+                const cookieType = option.getAttribute('data-cookie');
+                
+                // Update active state
+                cookieOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Change cookie image
+                if (cookieImage) {
+                    cookieImage.src = `images/${cookieType}.png`;
+                }
+                
+                // Save selection to localStorage
+                localStorage.setItem('selectedCookie', cookieType);
+                
+                // Show notification
+                this.ui.showNotification(`Cookie skin changed to ${option.getAttribute('title')}!`);
+            });
+        });
+    }
+
     init() {
         // Initialize UI
         this.ui.init();
+
+        // Set up cookie selector
+        this.setupCookieSelector();
 
         // Load saved game
         this.storage.loadGameState();
@@ -697,6 +777,9 @@ class Game {
 
         // Initialize tabs after DOM elements are created
         this.ui.initTabs();
+
+        // Add reset button event listener
+        document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
 
         // Start game loop
         this.gameLoop();

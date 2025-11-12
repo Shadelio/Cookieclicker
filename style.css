@@ -140,8 +140,35 @@ h1 {
 }
 
 .score-container {
-    font-size: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    text-align: center;
+    margin: 20px 0;
+    position: relative;
+    padding: 20px 40px 20px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.score-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 2rem;
     font-weight: bold;
+    color: var(--primary-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cps-container {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 
 .cookies-per-second {
@@ -369,6 +396,37 @@ h1 {
     font-size: 1.1rem;
 }
 
+/* Reset Button */
+.reset-button {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    opacity: 0.7;
+    width: 30px;
+    height: 30px;
+}
+
+.reset-button:hover {
+    opacity: 1;
+    transform: translateY(-50%) rotate(180deg);
+    color: var(--primary-color);
+}
+
+.reset-button:active {
+    transform: translateY(-50%) rotate(360deg) scale(0.9);
+}
+
 /* Notifications */
 .notification {
     position: fixed;
@@ -517,7 +575,27 @@ h1 {
     }
     
     .score-container {
-        font-size: 1.2rem;
+        font-size: 1.8rem;
+        text-align: center;
+        padding: 15px 30px 15px 15px;
+    }
+    
+    .score-main {
+        font-size: 2.2rem;
+    }
+    
+    .cps-container {
+        font-size: 1.3rem;
+        color: var(--secondary-color);
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+    
+    #score {
+        font-size: 2.8rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
     
     .theme-switch {
