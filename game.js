@@ -415,7 +415,6 @@ class UI {
         // Update button states
         this.updateShopButtons();
     }
-}
 
 // Storage Management Class
 class Storage {
