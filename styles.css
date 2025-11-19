@@ -1,0 +1,406 @@
+/* Cookie Clicker Pro - Professional Styling */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+/* Cookie Button Styling */
+.cookie-button {
+    background: linear-gradient(145deg, #f59e0b, #d97706);
+    border: none;
+    border-radius: 50%;
+    width: 250px;
+    height: 250px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4),
+                inset 0 -5px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.cookie-button:hover {
+    box-shadow: 0 15px 40px rgba(245, 158, 11, 0.6),
+                inset 0 -5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.cookie-button:active {
+    box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4),
+                inset 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.cookie-inner {
+    color: #78350f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Click Effect Animation */
+@keyframes floatUp {
+    0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(1.5);
+    }
+}
+
+.click-effect {
+    position: fixed;
+    font-size: 24px;
+    font-weight: bold;
+    color: #f59e0b;
+    pointer-events: none;
+    z-index: 1000;
+    animation: floatUp 1s ease-out forwards;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Shop Item Styling */
+.shop-item {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #fbbf24;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.shop-item:hover:not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(251, 191, 36, 0.3);
+    border-color: #f59e0b;
+}
+
+.shop-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    border-color: #9ca3af;
+}
+
+.shop-item-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.shop-item-name {
+    font-weight: bold;
+    color: #78350f;
+    margin-bottom: 4px;
+}
+
+.shop-item-cost {
+    color: #92400e;
+    font-size: 14px;
+}
+
+.shop-item-production {
+    color: #059669;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Upgrade Item Styling */
+.upgrade-item {
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+    border: 2px solid #60a5fa;
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.upgrade-item:hover:not(.disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(96, 165, 250, 0.3);
+    border-color: #3b82f6;
+}
+
+.upgrade-item.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
+    border-color: #9ca3af;
+}
+
+.upgrade-item.purchased {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #34d399;
+    cursor: default;
+}
+
+.upgrade-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+/* Owned Items Display */
+.owned-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f3f4f6;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.owned-item-name {
+    font-weight: 600;
+    color: #374151;
+}
+
+.owned-item-count {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+}
+
+/* Modal Styling */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Theme Card Styling */
+.theme-card {
+    background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+    border: 3px solid #d1d5db;
+    border-radius: 12px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.theme-card:hover:not(.locked) {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.theme-card.active {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.theme-card.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.theme-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+.theme-name {
+    font-weight: bold;
+    color: #1f2937;
+    margin-bottom: 5px;
+}
+
+.theme-requirement {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* Stats Display */
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+}
+
+.stat-label {
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.stat-value {
+    font-weight: bold;
+    color: #1f2937;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #fbbf24;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #f59e0b;
+}
+
+/* Pulse Animation for Special Events */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Theme Variations */
+body.theme-dark {
+    background: linear-gradient(to-br, #1f2937, #111827);
+}
+
+body.theme-dark .bg-white {
+    background: #374151 !important;
+    color: #f9fafb;
+}
+
+body.theme-dark .text-gray-800,
+body.theme-dark .text-gray-700,
+body.theme-dark .text-gray-600 {
+    color: #f3f4f6 !important;
+}
+
+body.theme-pink {
+    background: linear-gradient(to-br, #fce7f3, #fbcfe8);
+}
+
+body.theme-pink .cookie-button {
+    background: linear-gradient(145deg, #ec4899, #db2777);
+}
+
+body.theme-blue {
+    background: linear-gradient(to-br, #dbeafe, #bfdbfe);
+}
+
+body.theme-blue .cookie-button {
+    background: linear-gradient(145deg, #3b82f6, #2563eb);
+}
+
+body.theme-green {
+    background: linear-gradient(to-br, #d1fae5, #a7f3d0);
+}
+
+body.theme-green .cookie-button {
+    background: linear-gradient(145deg, #10b981, #059669);
+}
+
+body.theme-purple {
+    background: linear-gradient(to-br, #e9d5ff, #d8b4fe);
+}
+
+body.theme-purple .cookie-button {
+    background: linear-gradient(145deg, #a855f7, #9333ea);
+}
+
+/* Tab Navigation Styling */
+.tab-button {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    position: relative;
+}
+
+.tab-button:hover {
+    color: #3b82f6;
+    background: #f3f4f6;
+    border-radius: 8px 8px 0 0;
+}
+
+.tab-button.active {
+    color: #3b82f6;
+    border-bottom-color: #3b82f6;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: block;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .cookie-button {
+        width: 180px;
+        height: 180px;
+    }
+    
+    .cookie-inner i {
+        font-size: 6rem !important;
+    }
+    
+    .modal-content {
+        margin: 20px;
+        max-width: calc(100% - 40px);
+    }
+}

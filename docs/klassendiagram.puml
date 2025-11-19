@@ -1,0 +1,171 @@
+@startuml Cookie Clicker Class Diagram
+
+' ============================================================================
+' GAME MANAGER CLASS
+' ============================================================================
+class GameManager {
+    - state: GameState
+    - buildings: Building[]
+    - upgrades: Upgrade[]
+    - themes: Theme[]
+    - events: SpecialEvent[]
+    - ui: UIManager
+    
+    + constructor()
+    + initializeBuildings(): Building[]
+    + initializeUpgrades(): Upgrade[]
+    + initializeThemes(): Theme[]
+    + initializeEvents(): SpecialEvent[]
+    + loadBuildingsFromState(): void
+    + loadUpgradesFromState(): void
+    + clickCookie(x: number, y: number): void
+    + buyBuilding(buildingId: string): boolean
+    + buyUpgrade(upgradeId: string): boolean
+    + calculateCPS(): void
+    + changeTheme(themeId: string): void
+    + triggerRandomEvent(): void
+    + startGameLoop(): void
+    + startEventSystem(): void
+    + updateDisplay(): void
+    + getStats(): Object
+    + formatNumber(num: number): string
+}
+
+' ============================================================================
+' GAME STATE CLASS
+' ============================================================================
+class GameState {
+    + cookies: number
+    + totalCookiesEarned: number
+    + cookiesPerSecond: number
+    + clickPower: number
+    + totalClicks: number
+    + buildings: Object
+    + upgrades: Object
+    + currentTheme: string
+    + unlockedThemes: string[]
+    + startTime: number
+    + activeEvent: SpecialEvent | null
+    
+    + constructor()
+    + addCookies(amount: number): void
+    + spendCookies(amount: number): boolean
+    + save(): void
+    + load(): boolean
+    + reset(): void
+}
+
+' ============================================================================
+' BUILDING CLASS
+' ============================================================================
+class Building {
+    + id: string
+    + name: string
+    + baseCost: number
+    + baseProduction: number
+    + icon: string
+    + description: string
+    + count: number
+    + productionMultiplier: number
+    
+    + constructor(id, name, baseCost, baseProduction, icon, desc)
+    + getCost(): number
+    + getProduction(): number
+    + buy(): void
+    + applyUpgrade(multiplier: number): void
+}
+
+' ============================================================================
+' UPGRADE CLASS
+' ============================================================================
+class Upgrade {
+    + id: string
+    + name: string
+    + cost: number
+    + icon: string
+    + description: string
+    + effect: Function
+    + requirement: Function
+    + purchased: boolean
+    
+    + constructor(id, name, cost, icon, desc, effect, requirement)
+    + isAvailable(gameState: GameState): boolean
+    + purchase(gameState: GameState): boolean
+}
+
+' ============================================================================
+' THEME CLASS
+' ============================================================================
+class Theme {
+    + id: string
+    + name: string
+    + icon: string
+    + requirement: Function
+    + colors: Object
+    
+    + constructor(id, name, icon, requirement, colors)
+    + isUnlocked(gameState: GameState): boolean
+    + apply(): void
+}
+
+' ============================================================================
+' SPECIAL EVENT CLASS
+' ============================================================================
+class SpecialEvent {
+    + id: string
+    + title: string
+    + description: string
+    + duration: number
+    + effect: Object {start: Function, end: Function}
+    + icon: string
+    + startTime: number | null
+    + active: boolean
+    
+    + constructor(id, title, desc, duration, effect, icon)
+    + start(gameState: GameState): void
+    + end(gameState: GameState): void
+    + getRemainingTime(): number
+}
+
+' ============================================================================
+' UI MANAGER CLASS
+' ============================================================================
+class UIManager {
+    - game: GameManager
+    
+    + constructor(gameManager: GameManager)
+    + initializeEventListeners(): void
+    + showClickEffect(x: number, y: number, amount: number): void
+    + updateCookieCount(): void
+    + updateCPS(): void
+    + updateClickPower(): void
+    + renderShop(): void
+    + renderUpgrades(): void
+    + updateShop(): void
+    + updateUpgrades(): void
+    + updateOwned(): void
+    + renderThemes(): void
+    + showStats(): void
+    + showEvent(event: SpecialEvent): void
+    + hideEvent(): void
+}
+
+' ============================================================================
+' RELATIONSHIPS
+' ============================================================================
+GameManager "1" *-- "1" GameState : heeft
+GameManager "1" *-- "1" UIManager : heeft
+GameManager "1" o-- "0..*" Building : beheert
+GameManager "1" o-- "0..*" Upgrade : beheert
+GameManager "1" o-- "0..*" Theme : beheert
+GameManager "1" o-- "0..*" SpecialEvent : beheert
+
+UIManager "1" --> "1" GameManager : gebruikt
+
+Upgrade ..> GameState : gebruikt
+Theme ..> GameState : gebruikt
+SpecialEvent ..> GameState : gebruikt
+
+GameState "1" --> "0..1" SpecialEvent : activeEvent
+
+@enduml

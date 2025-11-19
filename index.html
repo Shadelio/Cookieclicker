@@ -1,110 +1,158 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Cookie Clicker</title>
-    <link rel="stylesheet" href="style.css?v=1.0">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-        /* Smooth theme transitions */
-        :root {
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        body {
-            transition: background-color 0.3s ease;
-        }
-    </style>
+    <title>Cookie Clicker Pro - Het Ultieme Cookie Spel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body>
-    <div class="game-container">
-        <header>
-            <h1>Cookie Clicker </h1>
-            <div class="score-container">
-                <div class="score-main">
-                    <span id="score">0</span> cookies
-                    <div class="cps-container">
-                        <span id="cps">0</span> per second
-                    </div>
-                </div>
-                <button id="reset-btn" class="reset-button" title="Reset Game">
-                    <span class="material-icons">refresh</span>
+<body class="bg-gradient-to-br from-amber-50 to-orange-100 min-h-screen">
+    <header class="bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-3xl font-bold flex items-center gap-2">
+                <i class="fas fa-cookie-bite"></i>
+                Cookie Clicker Pro
+            </h1>
+            <div class="flex gap-4">
+                <button id="themeBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-palette"></i> Thema's
+                </button>
+                <button id="statsBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-chart-bar"></i> Statistieken
+                </button>
+                <button id="resetBtn" class="bg-red-500/80 hover:bg-red-600 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-redo"></i> Reset
                 </button>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main class="main-layout">
-            <div class="cookie-container">
-                <button id="cookie" class="cookie-button" aria-label="Click to earn cookies">
-                    <img src="https://img.icons8.com/color/96/000000/cookie--v1.png" alt="Click the cookie!" class="cookie-image">
-                    <div class="click-effect">+1</div>
-                </button>
-            </div>
+    <main class="container mx-auto px-4 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-2xl shadow-2xl p-8">
+                    <div class="text-center mb-8">
+                        <div class="text-6xl font-bold text-amber-600 mb-2" id="cookieCount">0</div>
+                        <div class="text-xl text-gray-600">cookies</div>
+                        <div class="text-lg text-gray-500 mt-2">
+                            <i class="fas fa-clock"></i> 
+                            <span id="cookiesPerSecond">0</span> per seconde
+                        </div>
+                    </div>
 
-            <div class="shop">
-                <div class="shop-section">
-                    <!-- Tab Navigation -->
-                    <div class="tab-navigation">
-                        <button class="tab-button active" data-tab="auto-clickers">
-                            <span class="material-icons">mouse</span>
-                            Auto Clickers
-                        </button>
-                        <button class="tab-button" data-tab="upgrades">
-                            <span class="material-icons">upgrade</span>
-                            Upgrades
-                        </button>
-                        <button class="tab-button" data-tab="statistics">
-                            <span class="material-icons">analytics</span>
-                            Statistics
+                    <div class="flex justify-center mb-8">
+                        <button id="cookieBtn" class="cookie-button transform transition-all duration-150 hover:scale-105 active:scale-95">
+                            <div class="cookie-inner">
+                                <i class="fas fa-cookie-bite text-9xl"></i>
+                            </div>
                         </button>
                     </div>
 
-                    <!-- Tab Content -->
-                    <div class="tab-content">
-                        <div id="auto-clickers-tab" class="tab-panel active">
-                            <div id="auto-clickers" class="shop-items">
-                            </div>
+                    <div class="text-center">
+                        <div class="inline-block bg-gradient-to-r from-amber-100 to-orange-100 px-6 py-3 rounded-full">
+                            <i class="fas fa-hand-pointer text-amber-600"></i>
+                            <span class="font-semibold text-gray-700">Klik kracht: </span>
+                            <span class="font-bold text-amber-600" id="clickPower">1</span>
                         </div>
+                    </div>
 
-                        <div id="upgrades-tab" class="tab-panel">
-                            <div id="upgrades" class="shop-items">
+                    <div id="eventBanner" class="mt-6 hidden">
+                        <div class="bg-gradient-to-r from-purple-500 to-pink-500 text-white p-4 rounded-lg shadow-lg animate-pulse">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <i class="fas fa-star"></i>
+                                    <span class="font-bold ml-2" id="eventTitle"></span>
+                                </div>
+                                <div class="text-sm" id="eventTimer"></div>
                             </div>
-                        </div>
-
-                        <div id="statistics-tab" class="tab-panel">
-                            <div id="statistics" class="shop-items">
-                                <div class="stat-item">
-                                    <span class="stat-label">Total Cookies:</span>
-                                    <span id="total-cookies" class="stat-value">0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Cookies Per Second:</span>
-                                    <span id="total-cps" class="stat-value">0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Total Clicks:</span>
-                                    <span id="total-clicks" class="stat-value">0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Auto Clickers Owned:</span>
-                                    <span id="autoclickers-owned" class="stat-value">0</span>
-                                </div>
-                                <div class="stat-item">
-                                    <span class="stat-label">Upgrades Owned:</span>
-                                    <span id="upgrades-owned" class="stat-value">0</span>
-                                </div>
-                            </div>
+                            <div class="text-sm mt-1" id="eventDescription"></div>
                         </div>
                     </div>
                 </div>
+
             </div>
-        </main>
-        <div id="notification" class="notification" role="status" aria-live="polite"></div>
-        <div id="event-notification" class="event-notification" role="alert" aria-live="assertive"></div>
+
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-2xl shadow-2xl p-6 sticky top-4">
+                    <div class="flex gap-2 mb-4 border-b-2 border-gray-200">
+                        <button id="tabAutoclickers" class="tab-button active flex-1 py-3 px-4 font-semibold transition-all">
+                            <i class="fas fa-store"></i> Autoclickers
+                        </button>
+                        <button id="tabUpgrades" class="tab-button flex-1 py-3 px-4 font-semibold transition-all">
+                            <i class="fas fa-arrow-up"></i> Upgrades
+                        </button>
+                    </div>
+
+                    <div id="contentAutoclickers" class="tab-content active">
+                        <div id="shopContainer" class="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                            <!-- Shop items will be populated here -->
+                        </div>
+                    </div>
+
+                    <div id="contentUpgrades" class="tab-content hidden">
+                        <div id="upgradesContainer" class="grid grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-2">
+                            <!-- Upgrades will be populated here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-2xl p-6 mt-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-box text-purple-500"></i>
+                        Bezit
+                    </h2>
+                    <div id="ownedContainer" class="space-y-2">
+                        <!-- Owned items will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="themeModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-palette"></i> Thema's & Skins
+                </h2>
+                <button class="close-modal text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="themesContainer" class="grid grid-cols-2 gap-4">
+                <!-- Themes will be populated here -->
+            </div>
+        </div>
     </div>
-    <script src="game.js?v=1.0"></script>
+
+    <div id="statsModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-chart-bar"></i> Statistieken
+                </h2>
+                <button class="close-modal text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <div id="statsContent" class="space-y-4">
+                <!-- Stats will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <div id="clickEffects"></div>
+
+    <footer class="bg-gradient-to-r from-amber-600 to-orange-600 text-white mt-12">
+        <div class="container mx-auto px-4 py-6 text-center">
+            <p class="text-sm">
+                <i class="fas fa-copyright"></i> 2025 Cookie Clicker Pro. Alle rechten voorbehouden.
+            </p>
+        </div>
+    </footer>
+
+    <script src="game.js"></script>
 </body>
 </html>

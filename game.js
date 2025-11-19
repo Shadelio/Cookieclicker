@@ -1,801 +1,899 @@
-// Object-Oriented Cookie Clicker Game
 
-// AutoClicker Class
-class AutoClicker {
-    constructor(id, name, description, baseCost, baseCps, icon) {
+class GameState {
+    constructor() {
+        this.cookies = 0;
+        this.totalCookiesEarned = 0;
+        this.cookiesPerSecond = 0;
+        this.clickPower = 1;
+        this.totalClicks = 0;
+        this.buildings = {};
+        this.upgrades = {};
+        this.currentTheme = 'default';
+        this.unlockedThemes = ['default'];
+        this.startTime = Date.now();
+        this.activeEvent = null;
+    }
+
+    addCookies(amount) {
+        this.cookies += amount;
+        this.totalCookiesEarned += amount;
+    }
+
+    spendCookies(amount) {
+        if (this.cookies >= amount) {
+            this.cookies -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    save() {
+        const saveData = {
+            cookies: this.cookies,
+            totalCookiesEarned: this.totalCookiesEarned,
+            cookiesPerSecond: this.cookiesPerSecond,
+            clickPower: this.clickPower,
+            totalClicks: this.totalClicks,
+            buildings: this.buildings,
+            upgrades: this.upgrades,
+            currentTheme: this.currentTheme,
+            unlockedThemes: this.unlockedThemes,
+            startTime: this.startTime
+        };
+        localStorage.setItem('cookieClickerSave', JSON.stringify(saveData));
+    }
+
+    load() {
+        const saveData = localStorage.getItem('cookieClickerSave');
+        if (saveData) {
+            const data = JSON.parse(saveData);
+            this.cookies = data.cookies || 0;
+            this.totalCookiesEarned = data.totalCookiesEarned || 0;
+            this.cookiesPerSecond = data.cookiesPerSecond || 0;
+            this.clickPower = data.clickPower || 1;
+            this.totalClicks = data.totalClicks || 0;
+            this.buildings = data.buildings || {};
+            this.upgrades = data.upgrades || {};
+            this.currentTheme = data.currentTheme || 'default';
+            this.unlockedThemes = data.unlockedThemes || ['default'];
+            this.startTime = data.startTime || Date.now();
+            return true;
+        }
+        return false;
+    }
+
+    reset() {
+        localStorage.removeItem('cookieClickerSave');
+        location.reload();
+    }
+}
+
+// BUILDING CLASS
+class Building {
+    constructor(id, name, baseCost, baseProduction, icon, description) {
         this.id = id;
         this.name = name;
-        this.description = description;
         this.baseCost = baseCost;
-        this.baseCps = baseCps;
+        this.baseProduction = baseProduction;
         this.icon = icon;
+        this.description = description;
         this.count = 0;
+        this.productionMultiplier = 1;
     }
 
     getCost() {
         return Math.floor(this.baseCost * Math.pow(1.15, this.count));
     }
 
-    getCurrentCps() {
-        return this.baseCps * this.count;
+    getProduction() {
+        return this.baseProduction * this.count * this.productionMultiplier;
     }
 
     buy() {
-        const cost = this.getCost();
-        if (game.cookies >= cost) {
-            game.cookies -= cost;
-            this.count++;
-            game.updateCookiesPerSecond();
-            game.ui.updateAutoClickerUI(this);
-            game.ui.updateShopButtons();
-            game.ui.showNotification(`${this.name} purchased!`);
-            game.storage.saveGameState();
-            return true;
-        }
-        return false;
+        this.count++;
     }
 
-    toJSON() {
-        return {
-            id: this.id,
-            count: this.count,
-            baseCost: this.baseCost,
-            baseCps: this.baseCps
-        };
+    applyUpgrade(multiplier) {
+        this.productionMultiplier *= multiplier;
     }
 }
 
-// Upgrade Class
+// UPGRADE CLASS
 class Upgrade {
-    constructor(id, name, description, cost, icon, effect, requirement = null) {
+    constructor(id, name, cost, icon, description, effect, requirement) {
         this.id = id;
         this.name = name;
-        this.description = description;
         this.cost = cost;
         this.icon = icon;
+        this.description = description;
         this.effect = effect;
         this.requirement = requirement;
-        this.owned = false;
+        this.purchased = false;
     }
 
-    canBuy() {
-        return !this.owned && 
-               game.cookies >= this.cost && 
-               (!this.requirement || this.requirement());
+    isAvailable(gameState) {
+        if (this.purchased) return false;
+        return this.requirement(gameState);
     }
 
-    buy() {
-        if (this.canBuy()) {
-            game.cookies -= this.cost;
-            this.owned = true;
-            
-            if (this.effect) {
-                this.effect();
-            }
-            
-            game.ui.updateUpgradeUI(this);
-            game.ui.updateShopButtons();
-            game.ui.showNotification(`${this.name} purchased!`);
-            game.storage.saveGameState();
+    purchase(gameState) {
+        if (!this.isAvailable(gameState)) return false;
+        if (gameState.spendCookies(this.cost)) {
+            this.purchased = true;
+            this.effect(gameState);
             return true;
         }
         return false;
     }
-
-    toJSON() {
-        return {
-            id: this.id,
-            owned: this.owned
-        };
-    }
 }
 
-// Achievement Class
-class Achievement {
-    constructor(id, name, description, icon, requirement, reward) {
+// THEME CLASS
+class Theme {
+    constructor(id, name, icon, requirement, colors) {
         this.id = id;
         this.name = name;
-        this.description = description;
         this.icon = icon;
         this.requirement = requirement;
-        this.reward = reward;
-        this.unlocked = false;
+        this.colors = colors;
     }
 
-    check() {
-        if (!this.unlocked && this.requirement()) {
-            this.unlocked = true;
-            game.ui.showEvent(
-                'Achievement Unlocked!', 
-                `${this.name}: ${this.description}<br>Reward: ${this.reward}`
-            );
+    isUnlocked(gameState) {
+        return this.requirement(gameState);
+    }
+
+    apply() {
+        document.body.className = `bg-gradient-to-br ${this.colors.background} min-h-screen theme-${this.id}`;
+    }
+}
+
+// SPECIAL EVENT CLASS
+class SpecialEvent {
+    constructor(id, title, description, duration, effect, icon) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.duration = duration;
+        this.effect = effect;
+        this.icon = icon;
+        this.startTime = null;
+        this.active = false;
+    }
+
+    start(gameState) {
+        this.active = true;
+        this.startTime = Date.now();
+        this.effect.start(gameState);
+    }
+
+    end(gameState) {
+        this.active = false;
+        this.effect.end(gameState);
+    }
+
+    getRemainingTime() {
+        if (!this.active) return 0;
+        const elapsed = Date.now() - this.startTime;
+        return Math.max(0, this.duration - elapsed);
+    }
+}
+
+// GAME MANAGER CLASS
+class GameManager {
+    constructor() {
+        this.state = new GameState();
+        this.buildings = this.initializeBuildings();
+        this.upgrades = this.initializeUpgrades();
+        this.themes = this.initializeThemes();
+        this.events = this.initializeEvents();
+        this.ui = new UIManager(this);
+        
+        // Load saved game
+        if (this.state.load()) {
+            this.loadBuildingsFromState();
+            this.loadUpgradesFromState();
+        }
+        
+        this.startGameLoop();
+        this.startEventSystem();
+    }
+
+    initializeBuildings() {
+        return [
+            new Building('cursor', 'Cursor', 15, 0.1, 'fa-hand-pointer', 'Automatische klik'),
+            new Building('grandma', 'Oma', 100, 1, 'fa-person-cane', 'Een vriendelijke oma die cookies bakt'),
+            new Building('farm', 'Boerderij', 1100, 8, 'fa-tractor', 'Groeit cookie planten'),
+            new Building('mine', 'Mijn', 12000, 47, 'fa-gem', 'Delft cookie erts'),
+            new Building('factory', 'Fabriek', 130000, 260, 'fa-industry', 'Massaproductie van cookies'),
+            new Building('bank', 'Bank', 1400000, 1400, 'fa-building-columns', 'Investeert in cookies'),
+            new Building('temple', 'Tempel', 20000000, 7800, 'fa-place-of-worship', 'Cookie offers aan de goden'),
+            new Building('wizard', 'Tovenaar', 330000000, 44000, 'fa-hat-wizard', 'Tovert cookies uit het niets'),
+            new Building('spaceship', 'Ruimteschip', 5100000000, 260000, 'fa-rocket', 'Haalt cookies uit de ruimte'),
+            new Building('portal', 'Portaal', 75000000000, 1600000, 'fa-portal', 'Verbindt met cookie dimensies')
+        ];
+    }
+
+    initializeUpgrades() {
+        return [
+            new Upgrade(
+                'click1',
+                'Versterkte Vingers',
+                100,
+                'fa-hand-fist',
+                'Klik kracht +1',
+                (state) => { state.clickPower += 1; },
+                (state) => state.totalClicks >= 100
+            ),
+            new Upgrade(
+                'click2',
+                'Titanium Muisknoppen',
+                500,
+                'fa-computer-mouse',
+                'Klik kracht +2',
+                (state) => { state.clickPower += 2; },
+                (state) => state.totalClicks >= 1000
+            ),
+            new Upgrade(
+                'cursor1',
+                'Dubbele Cursors',
+                1000,
+                'fa-arrows-split-up-and-left',
+                'Cursor productie x2',
+                (state) => { 
+                    const building = game.buildings.find(b => b.id === 'cursor');
+                    if (building) building.applyUpgrade(2);
+                },
+                (state) => (state.buildings.cursor || 0) >= 10
+            ),
+            new Upgrade(
+                'grandma1',
+                'Oma\'s Geheim Recept',
+                5000,
+                'fa-book',
+                'Oma productie x2',
+                (state) => {
+                    const building = game.buildings.find(b => b.id === 'grandma');
+                    if (building) building.applyUpgrade(2);
+                },
+                (state) => (state.buildings.grandma || 0) >= 10
+            ),
+            new Upgrade(
+                'farm1',
+                'Genetisch Gemodificeerde Cookies',
+                55000,
+                'fa-dna',
+                'Boerderij productie x2',
+                (state) => {
+                    const building = game.buildings.find(b => b.id === 'farm');
+                    if (building) building.applyUpgrade(2);
+                },
+                (state) => (state.buildings.farm || 0) >= 10
+            ),
+            new Upgrade(
+                'global1',
+                'Cookie Imperium',
+                500000,
+                'fa-crown',
+                'Alle productie x1.5',
+                (state) => {
+                    game.buildings.forEach(b => b.applyUpgrade(1.5));
+                },
+                (state) => state.totalCookiesEarned >= 1000000
+            ),
+            new Upgrade(
+                'click3',
+                'Mega Klik',
+                50000,
+                'fa-burst',
+                'Klik kracht +5',
+                (state) => { state.clickPower += 5; },
+                (state) => state.totalClicks >= 5000
+            ),
+            new Upgrade(
+                'factory1',
+                'Industriële Revolutie',
+                650000,
+                'fa-gears',
+                'Fabriek productie x2',
+                (state) => {
+                    const building = game.buildings.find(b => b.id === 'factory');
+                    if (building) building.applyUpgrade(2);
+                },
+                (state) => (state.buildings.factory || 0) >= 10
+            )
+        ];
+    }
+
+    initializeThemes() {
+        return [
+            new Theme(
+                'default',
+                'Klassiek',
+                'fa-cookie',
+                () => true,
+                { background: 'from-amber-50 to-orange-100' }
+            ),
+            new Theme(
+                'dark',
+                'Donker',
+                'fa-moon',
+                (state) => state.totalCookiesEarned >= 1000,
+                { background: 'from-gray-800 to-gray-900' }
+            ),
+            new Theme(
+                'pink',
+                'Roze Droom',
+                'fa-heart',
+                (state) => state.totalCookiesEarned >= 10000,
+                { background: 'from-pink-200 to-pink-300' }
+            ),
+            new Theme(
+                'blue',
+                'Ocean Breeze',
+                'fa-water',
+                (state) => state.totalCookiesEarned >= 50000,
+                { background: 'from-blue-200 to-blue-300' }
+            ),
+            new Theme(
+                'green',
+                'Natuur',
+                'fa-leaf',
+                (state) => state.totalCookiesEarned >= 100000,
+                { background: 'from-green-200 to-green-300' }
+            ),
+            new Theme(
+                'purple',
+                'Mystiek',
+                'fa-wand-magic-sparkles',
+                (state) => state.totalCookiesEarned >= 500000,
+                { background: 'from-purple-200 to-purple-300' }
+            )
+        ];
+    }
+
+    initializeEvents() {
+        return [
+            new SpecialEvent(
+                'goldenCookie',
+                'Gouden Cookie!',
+                'Klik kracht x7 voor 30 seconden',
+                30000,
+                {
+                    start: (state) => { 
+                        state.clickPower *= 7;
+                    },
+                    end: (state) => {
+                        state.clickPower /= 7;
+                    }
+                },
+                'fa-star'
+            ),
+            new SpecialEvent(
+                'frenzy',
+                'Cookie Frenzy!',
+                'Alle productie x3 voor 60 seconden',
+                60000,
+                {
+                    start: (state) => {
+                        game.buildings.forEach(b => b.applyUpgrade(3));
+                    },
+                    end: (state) => {
+                        game.buildings.forEach(b => b.productionMultiplier /= 3);
+                    }
+                },
+                'fa-fire'
+            ),
+            new SpecialEvent(
+                'lucky',
+                'Gelukscookie!',
+                'Ontvang 10% van je totale cookies',
+                1000,
+                {
+                    start: (state) => {
+                        const bonus = Math.floor(state.cookies * 0.1);
+                        state.addCookies(bonus);
+                    },
+                    end: () => {}
+                },
+                'fa-clover'
+            )
+        ];
+    }
+
+    loadBuildingsFromState() {
+        for (let building of this.buildings) {
+            if (this.state.buildings[building.id]) {
+                building.count = this.state.buildings[building.id].count || 0;
+                building.productionMultiplier = this.state.buildings[building.id].multiplier || 1;
+            }
+        }
+    }
+
+    loadUpgradesFromState() {
+        for (let upgrade of this.upgrades) {
+            if (this.state.upgrades[upgrade.id]) {
+                upgrade.purchased = true;
+            }
+        }
+    }
+
+    clickCookie(x, y) {
+        this.state.addCookies(this.state.clickPower);
+        this.state.totalClicks++;
+        this.ui.showClickEffect(x, y, this.state.clickPower);
+        this.updateDisplay();
+    }
+
+    buyBuilding(buildingId) {
+        const building = this.buildings.find(b => b.id === buildingId);
+        if (!building) return false;
+
+        const cost = building.getCost();
+        if (this.state.spendCookies(cost)) {
+            building.buy();
+            this.state.buildings[buildingId] = {
+                count: building.count,
+                multiplier: building.productionMultiplier
+            };
+            this.calculateCPS();
+            this.updateDisplay();
+            this.state.save();
             return true;
         }
         return false;
     }
-}
 
-// UI Management Class
-class UI {
-    constructor() {
-        this.scoreElement = null;
-        this.cpsElement = null;
-        this.cookieButton = null;
-    }
+    buyUpgrade(upgradeId) {
+        const upgrade = this.upgrades.find(u => u.id === upgradeId);
+        if (!upgrade) return false;
 
-    init() {
-        this.scoreElement = document.getElementById('score');
-        this.cpsElement = document.getElementById('cps');
-        this.cookieButton = document.getElementById('cookie');
-        
-        this.initThemeSwitcher();
-        this.initTooltips();
-        this.setupEventListeners();
-    }
-
-    showNotification(message, duration = 3000) {
-        const notification = document.getElementById('notification');
-        if (!notification) return;
-        
-        notification.textContent = message;
-        notification.classList.add('show');
-        
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, duration);
-    }
-
-    showEvent(title, message, duration = 5000) {
-        const eventNotification = document.getElementById('event-notification');
-        if (!eventNotification) return;
-        
-        eventNotification.innerHTML = `<strong>${title}</strong><br>${message}`;
-        eventNotification.classList.add('show');
-        
-        setTimeout(() => {
-            eventNotification.classList.remove('show');
-        }, duration);
-    }
-
-    initThemeSwitcher() {
-        const themeSwitch = document.createElement('button');
-        themeSwitch.className = 'theme-switch';
-        themeSwitch.innerHTML = '<span class="material-icons">palette</span>';
-        themeSwitch.title = 'Cycle themes';
-        document.body.appendChild(themeSwitch);
-        
-        const themes = [
-            { id: 'light', name: 'Light', icon: 'light_mode' },
-            { id: 'dark', name: 'Dark', icon: 'dark_mode' },
-            { id: 'ocean', name: 'Ocean', icon: 'water_drop' },
-            { id: 'forest', name: 'Forest', icon: 'park' },
-            { id: 'sunset', name: 'Sunset', icon: 'wb_sunny' },
-            { id: 'thunder', name: 'Thunder', icon: 'flash_on' }
-        ];
-        
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-        
-        let currentThemeIndex = themes.findIndex(theme => theme.id === savedTheme);
-        if (currentThemeIndex === -1) currentThemeIndex = 0;
-        
-        themeSwitch.addEventListener('click', () => {
-            currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-            const newTheme = themes[currentThemeIndex];
-            
-            document.documentElement.setAttribute('data-theme', newTheme.id);
-            localStorage.setItem('theme', newTheme.id);
-            
-            const icon = themeSwitch.querySelector('.material-icons');
-            icon.textContent = newTheme.icon;
-            
-            this.showNotification(`Switched to ${newTheme.name} theme`);
-        });
-        
-        const currentTheme = themes[currentThemeIndex];
-        const icon = themeSwitch.querySelector('.material-icons');
-        icon.textContent = currentTheme.icon;
-    }
-
-    initTooltips() {
-        const tooltips = document.querySelectorAll('.tooltip');
-        tooltips.forEach(tooltip => {
-            tooltip.addEventListener('mouseenter', this.showTooltip);
-            tooltip.addEventListener('mouseleave', this.hideTooltip);
-        });
-    }
-
-    initTabs() {
-        const tabButtons = document.querySelectorAll('.tab-button');
-        const tabPanels = document.querySelectorAll('.tab-panel');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const targetTab = button.dataset.tab;
-
-                // Remove active class from all buttons and panels
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanels.forEach(panel => panel.classList.remove('active'));
-
-                // Add active class to clicked button and corresponding panel
-                button.classList.add('active');
-                const targetPanel = document.getElementById(`${targetTab}-tab`);
-                if (targetPanel) {
-                    targetPanel.classList.add('active');
-                }
-            });
-        });
-    }
-
-    showTooltip() {
-        const tooltip = this.querySelector('.tooltiptext');
-        if (tooltip) {
-            tooltip.style.visibility = 'visible';
-            tooltip.style.opacity = '1';
-        }
-    }
-
-    hideTooltip() {
-        const tooltip = this.querySelector('.tooltiptext');
-        if (tooltip) {
-            tooltip.style.visibility = 'hidden';
-            tooltip.style.opacity = '0';
-        }
-    }
-
-    formatNumber(num) {
-        if (num >= 1000000) {
-            return (num / 1000000).toFixed(1) + 'M';
-        }
-        if (num >= 1000) {
-            return (num / 1000).toFixed(1) + 'K';
-        }
-        return num.toString();
-    }
-
-    updateAutoClickerUI(autoClicker) {
-        const element = document.getElementById(`auto-clicker-${autoClicker.id}`);
-        if (!element) return;
-        
-        const cost = autoClicker.getCost();
-        const cps = autoClicker.getCurrentCps().toFixed(1);
-        
-        element.querySelector('.item-owned').textContent = `${autoClicker.count} owned`;
-        element.querySelector('.item-cps').textContent = `${cps} per second`;
-        
-        const button = element.querySelector('.buy-auto-clicker');
-        button.textContent = `Buy (${cost})`;
-        button.dataset.cost = cost;
-    }
-
-    updateUpgradeUI(upgrade) {
-        const element = document.getElementById(`upgrade-${upgrade.id}`);
-        if (!element) return;
-        
-        element.classList.add('owned');
-        const button = element.querySelector('.buy-upgrade');
-        if (button) {
-            button.textContent = 'Purchased';
-            button.disabled = true;
-        }
-    }
-
-    updateShopButtons() {
-        document.querySelectorAll('.buy-auto-clicker').forEach(button => {
-            const cost = parseFloat(button.dataset.cost);
-            button.disabled = game.cookies < cost;
-        });
-
-        document.querySelectorAll('.buy-upgrade:not(:disabled)').forEach(button => {
-            const cost = parseFloat(button.dataset.cost);
-            button.disabled = game.cookies < cost;
-        });
-    }
-
-    updateStatistics() {
-        const totalCookiesEl = document.getElementById('total-cookies');
-        const totalCpsEl = document.getElementById('total-cps');
-        const totalClicksEl = document.getElementById('total-clicks');
-        const autoclickersOwnedEl = document.getElementById('autoclickers-owned');
-        const upgradesOwnedEl = document.getElementById('upgrades-owned');
-        
-        if (totalCookiesEl) totalCookiesEl.textContent = Math.floor(game.totalCookiesEarned).toLocaleString();
-        if (totalCpsEl) totalCpsEl.textContent = game.cookiesPerSecond.toFixed(1);
-        if (totalClicksEl) totalClicksEl.textContent = game.totalClicks.toLocaleString();
-        if (autoclickersOwnedEl) {
-            const totalAutoclickers = game.autoClickers.reduce((total, ac) => total + ac.count, 0);
-            autoclickersOwnedEl.textContent = totalAutoclickers;
-        }
-        if (upgradesOwnedEl) {
-            const totalUpgrades = game.upgrades.filter(upgrade => upgrade.owned).length;
-            upgradesOwnedEl.textContent = totalUpgrades;
-        }
-    }
-
-    createAutoClickerElement(autoClicker) {
-        const element = document.createElement('div');
-        element.className = 'shop-item';
-        element.id = `auto-clicker-${autoClicker.id}`;
-        
-        const cost = autoClicker.getCost();
-        const cps = autoClicker.getCurrentCps().toFixed(1);
-        
-        element.innerHTML = `
-            <div class="item-info">
-                <div class="item-name">
-                    <span class="material-icons">${autoClicker.icon}</span>
-                    ${autoClicker.name}
-                </div>
-                <div class="item-description">${autoClicker.description}</div>
-                <div class="item-stats">
-                    <span class="item-owned">${autoClicker.count} owned</span>
-                    <span class="item-cps">${cps} per second</span>
-                </div>
-            </div>
-            <button class="buy-button buy-auto-clicker" data-id="${autoClicker.id}" data-cost="${cost}">
-                Buy (${cost})
-            </button>
-        `;
-        
-        const button = element.querySelector('.buy-auto-clicker');
-        button.addEventListener('click', () => autoClicker.buy());
-        
-        return element;
-    }
-
-    createUpgradeElement(upgrade) {
-        const element = document.createElement('div');
-        element.className = `shop-item ${upgrade.owned ? 'owned' : ''}`;
-        element.id = `upgrade-${upgrade.id}`;
-        
-        element.innerHTML = `
-            <div class="item-info">
-                <div class="item-name">
-                    <span class="material-icons">${upgrade.icon}</span>
-                    ${upgrade.name}
-                </div>
-                <div class="item-description">${upgrade.description}</div>
-            </div>
-            <button class="buy-button buy-upgrade" data-id="${upgrade.id}" data-cost="${upgrade.cost}">
-                ${upgrade.owned ? 'Purchased' : `Buy (${upgrade.cost})`}
-            </button>
-        `;
-        
-        if (!upgrade.owned) {
-            const button = element.querySelector('.buy-upgrade');
-            button.addEventListener('click', () => upgrade.buy());
-        }
-        
-        return element;
-    }
-
-    showClickEffect() {
-        this.cookieButton.classList.add('pulse');
-        setTimeout(() => this.cookieButton.classList.remove('pulse'), 200);
-    }
-
-    addClickEffect(amount) {
-        if (amount >= 1) {
-            const effect = document.createElement('div');
-            effect.className = 'click-effect';
-            effect.textContent = `+${Math.floor(amount)}`;
-            effect.style.left = `${Math.random() * 60 + 20}%`;
-            effect.style.top = `${Math.random() * 60 + 20}%`;
-            this.cookieButton.appendChild(effect);
-            setTimeout(() => effect.remove(), 1000);
-        }
-    }
-
-    setupEventListeners() {
-        // Cookie click
-        this.cookieButton.addEventListener('click', () => {
-            game.clickCookie();
-        });
-
-        // Keyboard shortcut (spacebar)
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && e.target === document.body) {
-                e.preventDefault();
-                this.cookieButton.click();
-            }
-        });
-
-        // Save before page unload
-        window.addEventListener('beforeunload', () => game.storage.saveGameState());
-    }
-
-    render() {
-        // Update score display
-        this.scoreElement.textContent = Math.floor(game.cookies).toLocaleString();
-        this.cpsElement.textContent = game.cookiesPerSecond.toFixed(1);
-
-        // Update statistics
-        this.updateStatistics();
-        
-        // Update button states
-        this.updateShopButtons();
-    }
-
-// Storage Management Class
-class Storage {
-    constructor() {
-        this.saveInterval = 10000; // 10 seconds
-    }
-
-    saveGameState() {
-        const gameState = {
-            cookies: game.cookies,
-            cookiesPerSecond: game.cookiesPerSecond,
-            cookiesPerClick: game.cookiesPerClick,
-            clickMultiplier: game.clickMultiplier,
-            totalClicks: game.totalClicks,
-            totalCookiesEarned: game.totalCookiesEarned,
-            achievements: game.achievements.filter(a => a.unlocked).map(a => a.id),
-            autoClickers: game.autoClickers.map(ac => ac.toJSON()),
-            upgrades: game.upgrades.map(upgrade => upgrade.toJSON()),
-            version: game.version
-        };
-
-        localStorage.setItem('cookieClickerSave', JSON.stringify(gameState));
-    }
-
-    loadGameState() {
-        try {
-            const savedData = localStorage.getItem('cookieClickerSave');
-            if (savedData) {
-                const gameState = JSON.parse(savedData);
-                
-                game.cookies = gameState.cookies || 0;
-                game.cookiesPerSecond = gameState.cookiesPerSecond || 0;
-                game.cookiesPerClick = gameState.cookiesPerClick || 1;
-                game.clickMultiplier = gameState.clickMultiplier || 1;
-                game.totalClicks = gameState.totalClicks || 0;
-                game.totalCookiesEarned = gameState.totalCookiesEarned || 0;
-                
-                // Load auto-clickers
-                if (gameState.autoClickers) {
-                    gameState.autoClickers.forEach(savedAc => {
-                        const autoClicker = game.autoClickers.find(ac => ac.id === savedAc.id);
-                        if (autoClicker) {
-                            autoClicker.count = savedAc.count || 0;
-                        }
-                    });
-                }
-                
-                // Load upgrades
-                if (gameState.upgrades) {
-                    gameState.upgrades.forEach(savedUpgrade => {
-                        const upgrade = game.upgrades.find(u => u.id === savedUpgrade.id);
-                        if (upgrade) {
-                            upgrade.owned = savedUpgrade.owned || false;
-                            if (upgrade.owned && upgrade.effect) {
-                                upgrade.effect();
-                            }
-                        }
-                    });
-                }
-
-                // Load achievements
-                if (gameState.achievements) {
-                    gameState.achievements.forEach(achievementId => {
-                        const achievement = game.achievements.find(a => a.id === achievementId);
-                        if (achievement) {
-                            achievement.unlocked = true;
-                        }
-                    });
-                }
-                
-                game.ui.showNotification('Game loaded!');
-                return true;
-            }
-        } catch (e) {
-            console.error('Error loading game:', e);
+        if (upgrade.purchase(this.state)) {
+            this.state.upgrades[upgradeId] = true;
+            this.calculateCPS();
+            this.updateDisplay();
+            this.state.save();
+            return true;
         }
         return false;
     }
-}
 
-// Main Game Class
-class Game {
-    constructor() {
-        this.cookies = 0;
-        this.cookiesPerSecond = 0;
-        this.cookiesPerClick = 1;
-        this.clickMultiplier = 1;
-        this.totalClicks = 0;
-        this.totalCookiesEarned = 0;
-        this.version = '2.0.0';
-        this.lastUpdate = Date.now();
-        
-        this.autoClickers = [];
-        this.upgrades = [];
-        this.achievements = [];
-        
-        this.ui = new UI();
-        this.storage = new Storage();
-        
-        this.initializeGameData();
-    }
-
-    initializeGameData() {
-        // Initialize auto-clickers
-        const autoClickerData = [
-            { id: 'cursor', name: 'Cursor', description: 'Automatically clicks for you', baseCost: 15, baseCps: 0.1, icon: 'mouse' },
-            { id: 'grandma', name: 'Grandma', description: 'A nice grandma to bake more cookies', baseCost: 100, baseCps: 0.5, icon: 'elderly' },
-            { id: 'farm', name: 'Farm', description: 'Grows cookie plants from cookie seeds', baseCost: 1100, baseCps: 4, icon: 'agriculture' },
-            { id: 'mine', name: 'Mine', description: 'Mines out cookie dough and chocolate chips', baseCost: 12000, baseCps: 10, icon: 'terrain' },
-            { id: 'factory', name: 'Factory', description: 'Produces cookies at an industrial scale', baseCost: 130000, baseCps: 40, icon: 'factory' },
-            { id: 'bank', name: 'Bank', description: 'Generates cookies from interest', baseCost: 1400000, baseCps: 100, icon: 'account_balance' },
-            { id: 'temple', name: 'Temple', description: 'Pray to the cookie gods', baseCost: 20000000, baseCps: 400, icon: 'temple_buddhist' },
-            { id: 'wizard', name: 'Wizard', description: 'Magically summons cookies from another dimension', baseCost: 330000000, baseCps: 1000, icon: 'auto_awesome' }
-        ];
-
-        this.autoClickers = autoClickerData.map(data => 
-            new AutoClicker(data.id, data.name, data.description, data.baseCost, data.baseCps, data.icon)
-        );
-
-        // Initialize upgrades
-        this.upgrades = [
-            new Upgrade('better_mouse', 'Better Mouse', 'Double your clicking power', 100, 'mouse', 
-                () => { this.cookiesPerClick *= 2; }),
-            new Upgrade('sharpened_fingers', 'Sharpened Fingers', 'Double your clicking power again', 500, 'touch_app', 
-                () => { this.cookiesPerClick *= 2; }, 
-                () => this.upgrades.some(u => u.id === 'better_mouse' && u.owned)),
-            new Upgrade('reinforced_clicker', 'Reinforced Clicker', 'Double the production of all auto-clickers', 5000, 'build', 
-                () => { this.autoClickers.forEach(ac => { ac.baseCps *= 2; }); }),
-            new Upgrade('cookie_power', 'Cookie Power', 'Double the production of ALL cookies', 50000, 'bolt', 
-                () => { 
-                    this.cookiesPerClick *= 2; 
-                    this.autoClickers.forEach(ac => { ac.baseCps *= 2; }); 
-                }),
-            new Upgrade('lucky_cookie', 'Lucky Cookie', 'Chance for critical hits that give 10x more cookies', 100000, 'casino', 
-                () => {})
-        ];
-
-        // Initialize achievements
-        this.achievements = [
-            new Achievement('first_click', 'First Click', 'Click the cookie for the first time', 'mouse', 
-                () => this.totalClicks >= 1, 'Unlock Ocean Theme'),
-            new Achievement('hundred_clicks', 'Clicking Master', 'Click 100 times', 'touch_app', 
-                () => this.totalClicks >= 100, 'Unlock Forest Theme'),
-            new Achievement('thousand_cookies', 'Cookie Collector', 'Earn 1,000 cookies', 'cookie', 
-                () => this.totalCookiesEarned >= 1000, 'Unlock Sunset Theme'),
-            new Achievement('first_autoclicker', 'Automation', 'Buy your first auto-clicker', 'auto_awesome', 
-                () => this.autoClickers.some(ac => ac.count > 0), 'Unlock Thunder Theme'),
-            new Achievement('ten_autoclickers', 'Mass Production', 'Own 10 auto-clickers total', 'factory', 
-                () => this.autoClickers.reduce((total, ac) => total + ac.count, 0) >= 10, 'Unlock Golden Cookie Skin'),
-            new Achievement('all_upgrades', 'Perfectionist', 'Buy all upgrades', 'star', 
-                () => this.upgrades.every(upgrade => upgrade.owned), 'Unlock Rainbow Cookie Skin')
-        ];
-    }
-
-    clickCookie() {
-        this.totalClicks++;
-        const multiplier = this.checkCriticalHit();
-        const amount = this.cookiesPerClick * this.clickMultiplier * multiplier;
-        this.addCookies(amount);
-        this.ui.showClickEffect();
-    }
-
-    addCookies(amount, showEffect = true) {
-        this.cookies += amount;
-        this.totalCookiesEarned += amount;
-        
-        if (showEffect) {
-            this.ui.addClickEffect(amount);
+    calculateCPS() {
+        let total = 0;
+        for (let building of this.buildings) {
+            total += building.getProduction();
         }
+        this.state.cookiesPerSecond = total;
     }
 
-    checkCriticalHit() {
-        const luckyCookie = this.upgrades.find(u => u.id === 'lucky_cookie' && u.owned);
-        if (luckyCookie && Math.random() < 0.1) {
-            return 10;
+    changeTheme(themeId) {
+        const theme = this.themes.find(t => t.id === themeId);
+        if (!theme) return;
+
+        if (!this.state.unlockedThemes.includes(themeId)) {
+            if (theme.isUnlocked(this.state)) {
+                this.state.unlockedThemes.push(themeId);
+            } else {
+                return;
+            }
         }
-        return 1;
-    }
 
-    updateCookiesPerSecond() {
-        this.cookiesPerSecond = this.autoClickers.reduce((total, ac) => {
-            return total + ac.getCurrentCps();
-        }, 0);
+        this.state.currentTheme = themeId;
+        theme.apply();
+        this.state.save();
     }
 
     triggerRandomEvent() {
-        const events = [
-            {
-                name: "Cookie Storm!",
-                message: "A cookie storm! Get 2x cookies for 10 seconds!",
-                duration: 10000,
-                effect: () => { this.clickMultiplier *= 2; },
-                revert: () => { this.clickMultiplier /= 2; }
-            },
-            {
-                name: "Lucky Day",
-                message: "It's your lucky day! Get a 100 cookie bonus!",
-                effect: () => { this.addCookies(100); }
-            },
-            {
-                name: "Productivity Boost",
-                message: "Your auto-clickers are 50% more productive for 30 seconds!",
-                duration: 30000,
-                effect: () => { this.cookiesPerSecond *= 1.5; },
-                revert: () => { this.cookiesPerSecond /= 1.5; }
+        if (this.state.activeEvent) return;
+
+        const event = this.events[Math.floor(Math.random() * this.events.length)];
+        event.start(this.state);
+        this.state.activeEvent = event;
+        this.ui.showEvent(event);
+
+        setTimeout(() => {
+            event.end(this.state);
+            this.state.activeEvent = null;
+            this.ui.hideEvent();
+            this.calculateCPS();
+        }, event.duration);
+    }
+
+    startGameLoop() {
+        setInterval(() => {
+            // Add cookies from production
+            const cps = this.state.cookiesPerSecond / 10; // Divided by 10 because we run 10 times per second
+            this.state.addCookies(cps);
+            
+            this.updateDisplay();
+            
+            // Auto-save every 10 seconds
+            if (Date.now() % 10000 < 100) {
+                this.state.save();
             }
-        ];
-
-        const event = events[Math.floor(Math.random() * events.length)];
-        this.ui.showEvent(event.name, event.message);
-        
-        if (event.effect) event.effect();
-        
-        if (event.duration && event.revert) {
-            setTimeout(() => {
-                event.revert();
-                this.ui.showEvent(`${event.name} over`, "The event has ended.");
-            }, event.duration);
-        }
+        }, 100);
     }
 
-    checkAchievements() {
-        this.achievements.forEach(achievement => {
-            achievement.check();
-        });
-    }
-
-    update() {
-        // Update cookies based on auto-clickers
-        const now = Date.now();
-        const deltaTime = (now - this.lastUpdate) / 1000;
-        this.lastUpdate = now;
-
-        if (deltaTime < 1) {
-            const cookiesToAdd = this.cookiesPerSecond * deltaTime;
-            if (cookiesToAdd > 0) {
-                this.addCookies(cookiesToAdd, false);
+    startEventSystem() {
+        setInterval(() => {
+            // 5% chance every 30 seconds to trigger an event
+            if (Math.random() < 0.05 && this.state.totalCookiesEarned > 100) {
+                this.triggerRandomEvent();
             }
-        }
-
-        // Random events
-        if (Math.random() < 0.0005) {
-            this.triggerRandomEvent();
-        }
-
-        // Check achievements
-        this.checkAchievements();
+        }, 30000);
     }
 
-    render() {
-        this.ui.render();
+    updateDisplay() {
+        this.ui.updateCookieCount();
+        this.ui.updateCPS();
+        this.ui.updateClickPower();
+        this.ui.updateShop();
+        this.ui.updateUpgrades();
+        this.ui.updateOwned();
     }
 
-    gameLoop(timestamp) {
-        this.update();
-        this.render();
-        requestAnimationFrame((ts) => this.gameLoop(ts));
+    getStats() {
+        const playTime = Math.floor((Date.now() - this.state.startTime) / 1000);
+        const hours = Math.floor(playTime / 3600);
+        const minutes = Math.floor((playTime % 3600) / 60);
+        const seconds = playTime % 60;
+
+        return {
+            'Totaal Cookies Verdiend': this.formatNumber(this.state.totalCookiesEarned),
+            'Huidige Cookies': this.formatNumber(this.state.cookies),
+            'Cookies per Seconde': this.formatNumber(this.state.cookiesPerSecond),
+            'Totaal Aantal Kliks': this.formatNumber(this.state.totalClicks),
+            'Klik Kracht': this.formatNumber(this.state.clickPower),
+            'Speeltijd': `${hours}u ${minutes}m ${seconds}s`,
+            'Gebouwen Gekocht': Object.values(this.state.buildings).reduce((sum, b) => sum + (b.count || 0), 0),
+            'Upgrades Gekocht': Object.keys(this.state.upgrades).length
+        };
     }
 
-    resetGame() {
-        if (confirm('Are you sure you want to reset your game? This will delete all your progress!')) {
-            // Reset game state
-            this.cookies = 0;
-            this.cookiesPerSecond = 0;
-            this.cookiesPerClick = 1;
-            this.clickMultiplier = 1;
-            this.totalClicks = 0;
-            this.totalCookiesEarned = 0;
-            
-            // Reset auto-clickers
-            this.autoClickers.forEach(autoClicker => {
-                autoClicker.count = 0;
-            });
-            
-            // Cookie selector functionality
-            this.setupCookieSelector();
-
-            // Reset upgrades
-            this.upgrades.forEach(upgrade => {
-                upgrade.owned = false;
-            });
-            
-            // Clear saved game from localStorage
-            localStorage.removeItem('cookieClickerSave');
-            
-            // Update UI
-            this.updateCookiesPerSecond();
-            this.ui.updateStatistics();
-            this.ui.showNotification('Game has been reset!');
-            
-            // Re-render UI elements
-            this.ui.updateShopButtons();
-            this.ui.render();
-        }
-    }
-
-    // Setup cookie selector functionality
-    setupCookieSelector() {
-        const cookieOptions = document.querySelectorAll('.cookie-option');
-        const cookieImage = document.querySelector('.cookie-image');
-        
-        // Load saved cookie selection or use default
-        const savedCookie = localStorage.getItem('selectedCookie') || 'cookie1';
-        
-        // Set initial cookie
-        cookieOptions.forEach(option => {
-            const cookieType = option.getAttribute('data-cookie');
-            if (cookieType === savedCookie) {
-                option.classList.add('active');
-                if (cookieImage) {
-                    cookieImage.src = `images/${cookieType}.png`;
-                }
-            }
-            
-            // Add click event for each cookie option
-            option.addEventListener('click', () => {
-                const cookieType = option.getAttribute('data-cookie');
-                
-                // Update active state
-                cookieOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                
-                // Change cookie image
-                if (cookieImage) {
-                    cookieImage.src = `images/${cookieType}.png`;
-                }
-                
-                // Save selection to localStorage
-                localStorage.setItem('selectedCookie', cookieType);
-                
-                // Show notification
-                this.ui.showNotification(`Cookie skin changed to ${option.getAttribute('title')}!`);
-            });
-        });
-    }
-
-    init() {
-        // Initialize UI
-        this.ui.init();
-
-        // Set up cookie selector
-        this.setupCookieSelector();
-
-        // Load saved game
-        this.storage.loadGameState();
-        this.updateCookiesPerSecond();
-
-        // Set up auto-clickers UI
-        const autoClickersContainer = document.getElementById('auto-clickers');
-        this.autoClickers.forEach(ac => {
-            autoClickersContainer.appendChild(this.ui.createAutoClickerElement(ac));
-        });
-
-        // Set up upgrades UI
-        const upgradesContainer = document.getElementById('upgrades');
-        this.upgrades.forEach(upgrade => {
-            upgradesContainer.appendChild(this.ui.createUpgradeElement(upgrade));
-        });
-
-        // Initialize tabs after DOM elements are created
-        this.ui.initTabs();
-
-        // Add reset button event listener
-        document.getElementById('reset-btn').addEventListener('click', () => this.resetGame());
-
-        // Start game loop
-        this.gameLoop();
-
-        // Auto-save periodically
-        setInterval(() => this.storage.saveGameState(), this.storage.saveInterval);
-
-        // Show welcome message
-        this.ui.showNotification('Welcome to Cookie Clicker OOP! Click the cookie to begin.');
+    formatNumber(num) {
+        if (num >= 1e12) return (num / 1e12).toFixed(2) + ' T';
+        if (num >= 1e9) return (num / 1e9).toFixed(2) + ' B';
+        if (num >= 1e6) return (num / 1e6).toFixed(2) + ' M';
+        if (num >= 1e3) return (num / 1e3).toFixed(2) + ' K';
+        return Math.floor(num).toString();
     }
 }
 
-// Global game instance
-let game;
+// UI MANAGER CLASS
+class UIManager {
+    constructor(gameManager) {
+        this.game = gameManager;
+        this.initializeEventListeners();
+        this.renderShop();
+        this.renderUpgrades();
+        this.renderThemes();
+        
+        // Apply saved theme
+        const theme = this.game.themes.find(t => t.id === this.game.state.currentTheme);
+        if (theme) theme.apply();
+    }
 
-// Start the game when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    game = new Game();
-    game.init();
+    initializeEventListeners() {
+        // Cookie click
+        document.getElementById('cookieBtn').addEventListener('click', (e) => {
+            this.game.clickCookie(e.clientX, e.clientY);
+        });
+
+        // Tab switching
+        document.getElementById('tabAutoclickers').addEventListener('click', () => {
+            this.switchTab('autoclickers');
+        });
+
+        document.getElementById('tabUpgrades').addEventListener('click', () => {
+            this.switchTab('upgrades');
+        });
+
+        // Theme button
+        document.getElementById('themeBtn').addEventListener('click', () => {
+            document.getElementById('themeModal').classList.remove('hidden');
+        });
+
+        // Stats button
+        document.getElementById('statsBtn').addEventListener('click', () => {
+            this.showStats();
+            document.getElementById('statsModal').classList.remove('hidden');
+        });
+
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Weet je zeker dat je het spel wilt resetten? Alle voortgang gaat verloren!')) {
+                this.game.state.reset();
+            }
+        });
+
+        // Close modals
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.target.closest('.modal').classList.add('hidden');
+            });
+        });
+
+        // Close modal on background click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+    }
+
+    switchTab(tabName) {
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.add('hidden');
+        });
+
+        // Activate selected tab
+        if (tabName === 'autoclickers') {
+            document.getElementById('tabAutoclickers').classList.add('active');
+            document.getElementById('contentAutoclickers').classList.remove('hidden');
+        } else if (tabName === 'upgrades') {
+            document.getElementById('tabUpgrades').classList.add('active');
+            document.getElementById('contentUpgrades').classList.remove('hidden');
+        }
+    }
+
+    showClickEffect(x, y, amount) {
+        const effect = document.createElement('div');
+        effect.className = 'click-effect';
+        effect.textContent = '+' + this.game.formatNumber(amount);
+        effect.style.left = x + 'px';
+        effect.style.top = y + 'px';
+        document.getElementById('clickEffects').appendChild(effect);
+
+        setTimeout(() => effect.remove(), 1000);
+    }
+
+    updateCookieCount() {
+        document.getElementById('cookieCount').textContent = this.game.formatNumber(this.game.state.cookies);
+    }
+
+    updateCPS() {
+        document.getElementById('cookiesPerSecond').textContent = this.game.formatNumber(this.game.state.cookiesPerSecond);
+    }
+
+    updateClickPower() {
+        document.getElementById('clickPower').textContent = this.game.formatNumber(this.game.state.clickPower);
+    }
+
+    renderShop() {
+        const container = document.getElementById('shopContainer');
+        container.innerHTML = '';
+
+        for (let building of this.game.buildings) {
+            const item = document.createElement('div');
+            const cost = building.getCost();
+            const canAfford = this.game.state.cookies >= cost;
+            
+            item.className = `shop-item ${!canAfford ? 'disabled' : ''}`;
+            item.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="shop-item-icon">
+                        <i class="fas ${building.icon}"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="shop-item-name">${building.name}</div>
+                        <div class="shop-item-cost">
+                            <i class="fas fa-cookie-bite"></i> ${this.game.formatNumber(cost)}
+                        </div>
+                        <div class="shop-item-production">
+                            <i class="fas fa-arrow-up"></i> ${this.game.formatNumber(building.baseProduction)}/s
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">${building.description}</div>
+                    </div>
+                </div>
+            `;
+
+            if (canAfford) {
+                item.addEventListener('click', () => {
+                    this.game.buyBuilding(building.id);
+                });
+            }
+
+            container.appendChild(item);
+        }
+    }
+
+    renderUpgrades() {
+        const container = document.getElementById('upgradesContainer');
+        container.innerHTML = '';
+
+        for (let upgrade of this.game.upgrades) {
+            const item = document.createElement('div');
+            const canAfford = this.game.state.cookies >= upgrade.cost;
+            const isAvailable = upgrade.isAvailable(this.game.state);
+            const isLocked = !isAvailable && !upgrade.purchased;
+            
+            item.className = `upgrade-item ${upgrade.purchased ? 'purchased' : (isLocked || !canAfford ? 'disabled' : '')}`;
+            
+            let statusText = '';
+            if (upgrade.purchased) {
+                statusText = '<div class="text-xs text-green-600 mt-1 font-bold">✓ Gekocht</div>';
+            } else {
+                statusText = `<div class="text-xs ${isLocked ? 'text-gray-500' : 'text-gray-600'} mt-1">
+                    <i class="fas fa-cookie-bite"></i> ${this.game.formatNumber(upgrade.cost)}
+                </div>`;
+                if (isLocked) {
+                    statusText += `<div class="text-xs text-red-600 mt-1 font-semibold">🔒 ${this.getUpgradeRequirement(upgrade)}</div>`;
+                } else if (!canAfford) {
+                    statusText += '<div class="text-xs text-orange-600 mt-1">💰 Te duur</div>';
+                } else {
+                    statusText += '<div class="text-xs text-green-600 mt-1">✓ Klik om te kopen</div>';
+                }
+            }
+            
+            item.innerHTML = `
+                <div class="upgrade-icon">
+                    <i class="fas ${upgrade.icon}"></i>
+                </div>
+                <div class="text-xs font-semibold text-gray-700">${upgrade.name}</div>
+                <div class="text-xs text-gray-500 mt-1">${upgrade.description}</div>
+                ${statusText}
+            `;
+
+            if (!upgrade.purchased && canAfford && isAvailable) {
+                item.addEventListener('click', () => {
+                    this.game.buyUpgrade(upgrade.id);
+                });
+            }
+
+            container.appendChild(item);
+        }
+    }
+
+    getUpgradeRequirement(upgrade) {
+        // Return human-readable requirement text
+        if (upgrade.id === 'click1') return '100 kliks';
+        if (upgrade.id === 'click2') return '1000 kliks';
+        if (upgrade.id === 'click3') return '5000 kliks';
+        if (upgrade.id === 'cursor1') return '10 Cursors';
+        if (upgrade.id === 'grandma1') return '10 Oma\'s';
+        if (upgrade.id === 'farm1') return '10 Boerderijen';
+        if (upgrade.id === 'factory1') return '10 Fabrieken';
+        if (upgrade.id === 'global1') return '1M totale cookies';
+        return 'Onbekend';
+    }
+
+    updateShop() {
+        this.renderShop();
+    }
+
+    updateUpgrades() {
+        this.renderUpgrades();
+    }
+
+    updateOwned() {
+        const container = document.getElementById('ownedContainer');
+        container.innerHTML = '';
+
+        let hasBuildings = false;
+        for (let building of this.game.buildings) {
+            if (building.count > 0) {
+                hasBuildings = true;
+                const item = document.createElement('div');
+                item.className = 'owned-item';
+                item.innerHTML = `
+                    <div class="owned-item-name">
+                        <i class="fas ${building.icon}"></i> ${building.name}
+                    </div>
+                    <div class="owned-item-count">${building.count}</div>
+                `;
+                container.appendChild(item);
+            }
+        }
+
+        if (!hasBuildings) {
+            container.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">Nog geen gebouwen gekocht</div>';
+        }
+    }
+
+    renderThemes() {
+        const container = document.getElementById('themesContainer');
+        container.innerHTML = '';
+
+        console.log('Total Cookies Earned:', this.game.state.totalCookiesEarned);
+        console.log('Current Cookies:', this.game.state.cookies);
+
+        for (let theme of this.game.themes) {
+            // Check if theme meets requirements and auto-unlock it
+            let isUnlocked = this.game.state.unlockedThemes.includes(theme.id);
+            const meetsRequirement = theme.isUnlocked(this.game.state);
+            console.log(`Theme ${theme.id}: unlocked=${isUnlocked}, meetsRequirement=${meetsRequirement}`);
+            
+            if (!isUnlocked && meetsRequirement) {
+                console.log(`Unlocking theme: ${theme.id}`);
+                this.game.state.unlockedThemes.push(theme.id);
+                isUnlocked = true;
+                this.game.state.save();
+            }
+            
+            const isActive = this.game.state.currentTheme === theme.id;
+            
+            const card = document.createElement('div');
+            card.className = `theme-card ${isActive ? 'active' : ''} ${!isUnlocked ? 'locked' : ''}`;
+            
+            let requirementText = '';
+            if (!isUnlocked) {
+                if (theme.id === 'dark') requirementText = 'Vereist: 1K totale cookies';
+                else if (theme.id === 'pink') requirementText = 'Vereist: 10K totale cookies';
+                else if (theme.id === 'blue') requirementText = 'Vereist: 50K totale cookies';
+                else if (theme.id === 'green') requirementText = 'Vereist: 100K totale cookies';
+                else if (theme.id === 'purple') requirementText = 'Vereist: 500K totale cookies';
+            }
+
+            card.innerHTML = `
+                <div class="theme-icon">
+                    <i class="fas ${theme.icon}"></i>
+                </div>
+                <div class="theme-name">${theme.name}</div>
+                ${!isUnlocked ? `<div class="theme-requirement">🔒 ${requirementText}</div>` : 
+                  (isActive ? '<div class="text-blue-600 font-semibold text-sm">✓ Actief</div>' : '')}
+            `;
+
+            if (isUnlocked) {
+                card.addEventListener('click', () => {
+                    this.game.changeTheme(theme.id);
+                    this.renderThemes();
+                });
+            }
+
+            container.appendChild(card);
+        }
+    }
+
+    showStats() {
+        const container = document.getElementById('statsContent');
+        const stats = this.game.getStats();
+        
+        container.innerHTML = '';
+        for (let [label, value] of Object.entries(stats)) {
+            const item = document.createElement('div');
+            item.className = 'stat-item';
+            item.innerHTML = `
+                <div class="stat-label">${label}</div>
+                <div class="stat-value">${value}</div>
+            `;
+            container.appendChild(item);
+        }
+    }
+
+    showEvent(event) {
+        const banner = document.getElementById('eventBanner');
+        const title = document.getElementById('eventTitle');
+        const description = document.getElementById('eventDescription');
+        const timer = document.getElementById('eventTimer');
+
+        title.textContent = event.title;
+        description.textContent = event.description;
+        banner.classList.remove('hidden');
+
+        const updateTimer = setInterval(() => {
+            const remaining = event.getRemainingTime();
+            if (remaining <= 0) {
+                clearInterval(updateTimer);
+                return;
+            }
+            const seconds = Math.ceil(remaining / 1000);
+            timer.textContent = `${seconds}s`;
+        }, 100);
+    }
+
+    hideEvent() {
+        document.getElementById('eventBanner').classList.add('hidden');
+    }
+}
+
+// Initialize game
+let game;
+window.addEventListener('DOMContentLoaded', () => {
+    game = new GameManager();
 });
